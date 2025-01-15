@@ -4,8 +4,6 @@ Example:
 
 --
 
-- `/actions` | Moderate a Member with some actions | Set/ModNick: **ManageNicknames**, Timeout: **ModerateMembers**, Kick: **KickMembers**, Ban: **BanMembers**
-
 - `/announce` | Send an Announcement through the bot | **Administrator**
 
 - `/avatar` | Get the avatar of an User
