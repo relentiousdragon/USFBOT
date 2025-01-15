@@ -56,6 +56,8 @@ Example:
 
 - `/server` | Display info about the server
 
+- `/servericon` | Display the server icon
+
 - `/setnick` | Set the Nickname of a Member | **ModerateNicknames**
 
 - `/suggestion` | Suggest something to be added in the bot to Developers
