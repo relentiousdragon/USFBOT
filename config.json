@@ -1,0 +1,25 @@
+{
+    "token": "BOT-TOKEN-HERE",
+    "clientId": "BOT-ID",
+    "guildId": "MAIN-GUILD-ID",
+
+    "version": "v2.0",
+    "discord": "DISCORD-INVITE",
+    "botinvite": "INVITE-LINK",
+    "terms": "TERMS-OF-SERVICE",
+    "privacy": "PRIVACY-POLICY",
+
+    "github": "GITHUB-ORG",
+    "commands": "COMMANDS",
+    "website": "WEBSITE LINK",
+    "image": "AVATAR-IMAGE",
+
+    "team": [ "TEAMMEMBER" ],
+    "bannedUsers": [ "" ],
+    "bannedGuilds": [ "" ],
+
+    "joinlog": "JOINS",
+    "leavelog": "LEAVES",
+    "reportlog": "REPORTS",
+    "suggestlog": "SUGGESTIONS"
+}
