@@ -4,13 +4,13 @@ Example:
 
 --
 
-- `/actions` | Moderate a Member with some actions | Set/ModNick: **ManageNicknames**, Timeout: **ModerateMembers**, Kick: **KickMembers**, Ban: **BanMembers**
-
 - `/announce` | Send an Announcement through the bot | **Administrator**
 
 - `/avatar` | Get the avatar of an User
 
 - `/ban` | Ban a Member | **BanMembers**
+
+- `/channel` | Get information about a channel
 
 - `/deafen` | Deafen a Member | **DeafenMembers**
 
@@ -21,6 +21,8 @@ Example:
 - `/faq` | USF Bot Frequently Asked Questions
 
 - `/help` | Get commands and info about the bot
+
+- `/highlow` | Play high-low with the bot
 
 - `/info` | Get informations about the bot
 
@@ -50,11 +52,15 @@ Example:
 
 - `/role` | Get Role Informations
 
+- `/rps` | Play Rock paper scissors with the bot
+
 - `/say` | Say something in chat through the bot | **Administrator**
 
 - `/search` | Generate search links
 
 - `/server` | Display info about the server
+
+- `/servericon` | Display the server icon
 
 - `/setnick` | Set the Nickname of a Member | **ModerateNicknames**
 

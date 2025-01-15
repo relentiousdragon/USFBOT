@@ -2,33 +2,34 @@
 The USF Bot is a Multipurpose Discord Bot created with the scope of helping every Servers with Moderation and Management, making some actions faster with Utility functions and Entertain the Community with Fun features! The Bot is 100% free and features we add are mostly suggested by our Community Members and Members in servers where the Bot is present.
 
 ## Informations
-[Commands](https://github.com/USF-Team/USFBOT/blob/main/Commands.md)
+[Commands](https://github.com/DXS-International/USFBOT/blob/main/Commands.md)
 
-[Organization Website](https://usfteam.pages.dev/)
+[Organization Website](https://dxsteam.me)
 
-[Status Page](https://usf.instatus.com/)
+[Status Page](https://dxs.instatus.com/)
 
 ### Suggestions
-Update Coming Soon
+Can be done through the /suggestion command
+
 ### Reports
-Update Coming Soon
+Can be done through the /report command
 
 ## Contacts
-[Discord Server](https://dsc.gg/usfteam)
+[Discord Server](https://discord.dxsteam.me)
 
-[Email](mailto:usfdiscordteam@gmail.com)
+[Email](mailto:dxsteam.contact@gmail.com)
 
 [Organization Representative Email](mailto:robertbelotti06@gmail.com)
 
 ## Help & Support
 
-[Discord](https://dsc.gg/usfteam)
+[Discord](https://discord.dxsteam.me)
 
-[Email](mailto:usfdiscordteam@gmail.com)
+[Email](mailto:dxsteam.contact@gmail.com)
 
 ## Legal
 `License Type:` GNU GPL3
 
-[Terms of Service](https://github.com/USF-Team/USFBOT/blob/main/Terms.md)
+[Terms of Service](https://github.com/DXS-International/USFBOT/blob/main/Terms.md)
 
-[Privacy Policy](https://github.com/USF-Team/USFBOT/blob/main/Privacy.md)
+[Privacy Policy](https://github.com/DXS-International/USFBOT/blob/main/Privacy.md)
