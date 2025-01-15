@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
-const { discord } = require('../../config.json');
+const { discord, botinvite, terms, privacy, commands, website, image, status } = require('../../config.json');
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -10,8 +10,8 @@ module.exports = {
         const helpEmbed = new EmbedBuilder()
         	.setColor(0x0000ff)
         	.setTitle('USFBot Informations')
-        	.setDescription('**Bot Prefix:** `/`\n**Terms of Service:** [`Link`](https://github.com/DDA-International/USFBOT/blob/main/Terms.md)\n**Privacy Policy:** [`Link`](https://github.com/DDA-International/USFBOT/blob/main/Privacy.md)\n**Support Server:** [`Link`](https://discord.gg/dV7Hwz7D64)\n**Commands List:** [`Link`](https://github.com/DDA-International/USFBOT/blob/main/Commands.md)\n**Organization Website:** [`Link`](https://dda.pages.dev/)\n**Status Page:** [`Link`](https://dda.instatus.com/)\n**Invite Link:** [`Link`](https://discord.com/oauth2/authorize?client_id=1090240246005907466)')
-        	.setThumbnail('https://cdn.discordapp.com/avatars/1090240246005907466/ee1ff1b9bec6271d833dece3222b587b.webp?size=2048')
+        	.setDescription(`**Bot Prefix:** `/`\n**Terms of Service:** [\`Link\`](${terms})\n**Privacy Policy:** [\`Link\`](${privacy})\n**Support Server:** [\`Link\`](${discord})\n**Commands List:** [\`Link\`](${commands})\n**Organization Website:** [\`Link\`](${website})\n**Status Page:** [\`Link\`](${status})\n**Invite Link:** [\`Link\`](${botinvite})`)
+        	.setThumbnail(`${image}`)
         	.setFooter({text: `Requested by ${user.username}`, iconURL: `${user.displayAvatarURL({size:32})}`})
         	.setTimestamp();
         const Discord = new ButtonBuilder()
