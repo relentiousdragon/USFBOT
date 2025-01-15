@@ -10,6 +10,8 @@ Example:
 
 - `/ban` | Ban a Member | **BanMembers**
 
+- `/channel` | Get information about a channel
+
 - `/deafen` | Deafen a Member | **DeafenMembers**
 
 - `/disconnect` | Disconnect a Member from a Voice Channel | **MoveMembers**
@@ -19,6 +21,8 @@ Example:
 - `/faq` | USF Bot Frequently Asked Questions
 
 - `/help` | Get commands and info about the bot
+
+- `/highlow` | Play high-low with the bot
 
 - `/info` | Get informations about the bot
 
@@ -47,6 +51,8 @@ Example:
 - `/report` | Report an User or Issue/Bug with the bot to Developers
 
 - `/role` | Get Role Informations
+
+- `/rps` | Play Rock paper scissors with the bot
 
 - `/say` | Say something in chat through the bot | **Administrator**
 
