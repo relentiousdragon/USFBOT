@@ -12,13 +12,13 @@ We need this data to make sure that the USF Bot is not used for other scopes whi
 - You can request to delete your server joinlogs if the bot left your discord server....
 - You can request to delete reports and suggestions sent to us...
 
-...through a support Ticket in our Discord Server or mailing us to usfdiscordteam@gmail.com.
+...through a support Ticket in our Discord Server or mailing us to dxsteam.contact@gmail.com.
 
 ## Who do we share your data with?
 Only the USF Team has access to this data and they are not allowed to send it anywhere.
 
 ## Where can we discuss about this Privacy Policy?
-You can send a mail to usfdiscordteam@gmail.com or ask in our Discord Server (https://dsc.gg/usfteam) through a support ticket.
+You can send a mail to usfdiscordteam@gmail.com or ask in our Discord Server (https://discord.dxsteam.me/) through a support ticket.
 
 ## Changes in the privacy Policy
 It is your responsibility to always stay informed of the latest Privacy Policy. Even if you haven't read it beforehand, you may still be subject to punishment.
