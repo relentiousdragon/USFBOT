@@ -11,6 +11,7 @@ We need this data to make sure that the USF Bot is not used for other scopes whi
 ## How can I request to get my data deleted?
 - You can request to delete your server joinlogs if the bot left your discord server....
 - You can request to delete reports and suggestions sent to us...
+
 ...through a support Ticket in our Discord Server or mailing us to usfdiscordteam@gmail.com.
 
 ## Who do we share your data with?
