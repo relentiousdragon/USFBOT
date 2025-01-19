@@ -8,10 +8,10 @@ The USF Bot is a Multipurpose Discord Bot created with the scope of helping ever
 
 [Status Page](https://dxs.instatus.com/)
 
-### Suggestions
+### Bot Suggestions
 Can be done through the /suggestion command
 
-### Reports
+### Bot Reports
 Can be done through the /report command
 
 ## Contacts
