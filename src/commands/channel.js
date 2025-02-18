@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js')
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -6,10 +6,9 @@ module.exports = {
         .addChannelOption(option => option.setName('channel').setDescription('The channel to get information about').setRequired(true))
         .setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply()
         const channel = interaction.options.getChannel('channel') ?? interaction.channel;
         if (!channel || channel.guild.id !== interaction.guild.id) {
-            return interaction.editReply('Please provide a valid channel in this server!');
+            return interaction.reply('Please provide a valid channel in this server!');
         }
         let channelType;
         switch (channel.type) {
@@ -31,6 +30,16 @@ module.exports = {
                 { name: 'Channel Type', value: `${channelType}`, inline: true },
             )
             .setTimestamp();
-        await interaction.editReply({ embeds: [embed] });
+            if (!(channel.type == 4)) {
+                if (channel.permissionsLocked === true) {
+                    embed.addFields({ name: 'Category Permissions', value: 'Matches category', inline: true });
+                } else if (channel.permissionsLocked === false) {
+                    embed.addFields({ name: 'Category Permissions', value: 'Does not match category', inline: true });
+                } else {
+                    embed.addFields({ name: 'Category Permissions', value: 'Has no category', inline: true });
+                }
+            }
+        console.log(channel);
+        await interaction.reply({ embeds: [embed] });
     }
 }

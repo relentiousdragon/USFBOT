@@ -16,7 +16,7 @@ module.exports={
         const role = interaction.options.getRole('target');
         const rolePos = interaction.guild.roles.cache.size - role.position;
         const rolbed = new EmbedBuilder()
-            .setTitle(`${role.name} Role Informations`)
+            .setTitle(`${role.name} Role Information`)
             .setDescription(`**Mention:** \`<@&${role.id}>\` | **ID:** \`${role.id}\``)
             .addFields(
                 { name: 'Role Created Date', value: `<t:${Math.floor(role.createdTimestamp/1000)}:F>`, inline: true },
@@ -27,6 +27,14 @@ module.exports={
                 { name: 'Role Mentionable', value: `${role.mentionable}`, inline: true },
             )
             .setColor(role.hexColor);
+            let rolePerms = role.permissions.toArray();
+            if (rolePerms.length > 0) {
+                let rolePermsList = '';
+                for (let i = 0; i < rolePerms.length; i++) {
+                    rolePermsList += `- ${rolePerms[i]}\n`;
+                }
+                rolbed.addFields({ name: 'Role Permissions', value: `${rolePermsList}` });
+            }
         if (role.icon) {
             rolbed.setThumbnail(role.iconURL({ size: 2048 }));
         }

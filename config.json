@@ -3,7 +3,7 @@
     "clientId": "BOT-ID",
     "guildId": "MAIN-GUILD-ID",
 
-    "version": "v2.0",
+    "version": "v",
     "discord": "DISCORD-INVITE",
     "botinvite": "INVITE-LINK",
     "terms": "TERMS-OF-SERVICE",

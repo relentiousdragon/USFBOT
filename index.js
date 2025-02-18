@@ -10,8 +10,6 @@ const client = new Client({
 
     ]} 
 });
-/*const { mysql } = require('mysql2')
-var connection;*/
 client.cooldowns = new Collection();
 client.commands = new Collection();
 //
