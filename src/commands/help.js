@@ -10,7 +10,7 @@ module.exports = {
         const helpEmbed = new EmbedBuilder()
         	.setColor(0x0000ff)
         	.setTitle('USFBot Informations')
-        	.setDescription(`**Bot Prefix:** `/`\n**Terms of Service:** [\`Link\`](${terms})\n**Privacy Policy:** [\`Link\`](${privacy})\n**Support Server:** [\`Link\`](${discord})\n**Commands List:** [\`Link\`](${commands})\n**Organization Website:** [\`Link\`](${website})\n**Status Page:** [\`Link\`](${status})\n**Invite Link:** [\`Link\`](${botinvite})`)
+        	.setDescription(`**Bot Prefix:** \`/\`\n**Terms of Service:** [\`Link\`](${terms})\n**Privacy Policy:** [\`Link\`](${privacy})\n**Support Server:** [\`Link\`](${discord})\n**Commands List:** [\`Link\`](${commands})\n**Organization Website:** [\`Link\`](${website})\n**Status Page:** [\`Link\`](${status})\n**Invite Link:** [\`Link\`](${botinvite})`)
         	.setThumbnail(`${image}`)
         	.setFooter({text: `Requested by ${user.username}`, iconURL: `${user.displayAvatarURL({size:32})}`})
         	.setTimestamp();

@@ -30,16 +30,15 @@ module.exports = {
                 { name: 'Channel Type', value: `${channelType}`, inline: true },
             )
             .setTimestamp();
-            if (!(channel.type == 4)) {
-                if (channel.permissionsLocked === true) {
-                    embed.addFields({ name: 'Category Permissions', value: 'Matches category', inline: true });
-                } else if (channel.permissionsLocked === false) {
-                    embed.addFields({ name: 'Category Permissions', value: 'Does not match category', inline: true });
-                } else {
-                    embed.addFields({ name: 'Category Permissions', value: 'Has no category', inline: true });
-                }
+        if (!(channel.type == 4)) {
+            if (channel.permissionsLocked === true) {
+                embed.addFields({ name: 'Category Permissions', value: 'Matches category', inline: true });
+            } else if (channel.permissionsLocked === false) {
+                embed.addFields({ name: 'Category Permissions', value: 'Does not match category', inline: true });
+            } else {
+                embed.addFields({ name: 'Category Permissions', value: 'Has no category', inline: true });
             }
-        console.log(channel);
+        }
         await interaction.reply({ embeds: [embed] });
     }
 }
