@@ -85,7 +85,7 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on(Events.GuildCreate, guild => {
     const joinch = client.channels.cache.get(joinlog)
     const { joinEmbed } = require('./src/embeds/index-embeds.js')
-    	joinEmbed.addFields(
+    	joinEmbed.setFields(
       		{ name: 'Server name', value: `${guild.name}` },
       		{ name: '\u200B', value: '\u200B' },
       		{ name: 'Members', value: `${guild.memberCount}`, inline: true },
@@ -105,7 +105,7 @@ client.on(Events.GuildDelete, async guild => {
     if (client.isReady()) {
         const leavech = await client.channels.fetch(leavelog);
         const { leaveEmbed } = require('./src/embeds/index-embeds.js')
-        leaveEmbed.addFields(
+        leaveEmbed.setFields(
                 { name: 'Server Name', value: `${guild.name}`},
                 { name: '\u200B', value: '\u200B' },
                 { name: 'Members', value: `${guild.memberCount}`, inline: true },
