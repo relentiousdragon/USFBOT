@@ -15,7 +15,7 @@ We need this data to make sure that the USF Bot is not used for other scopes whi
 ...through a support Ticket in our Discord Server or mailing us to dxsteam.contact@gmail.com.
 
 ## Who do we share your data with?
-Only the USF Team has access to this data and they are not allowed to send it anywhere.
+Only the DXS Team and Developers have access to this data and they are not allowed to send it in any place external to private channels dedicated to development
 
 ## Where can we discuss about this Privacy Policy?
 You can send a mail to usfdiscordteam@gmail.com or ask in our Discord Server (https://discord.dxsteam.me/) through a support ticket.
