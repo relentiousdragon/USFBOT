@@ -277,7 +277,7 @@ const commands = [
     },
     {
         name: "modnick",
-        description: "Moderate an user nickname",
+        description: "Moderate a user nickname",
         dm_permission: false,
         options: [
             {
@@ -422,7 +422,7 @@ const commands = [
     },
     {
         name: "report",
-        description: "Report an user or something wrong with the bot",
+        description: "Report a user or something wrong with the bot",
         dm_permission: true,
         integration_types: [0, 1],
         contexts: [0, 1, 2],
@@ -488,14 +488,14 @@ const commands = [
     },
     {
         name: "search",
-        description: "Generate Search Links",
+        description: "Search the Web",
         dm_permission: true,
         integration_types: [0, 1],
         contexts: [0, 1, 2],
         options: [
             {
-                name: "text",
-                description: "Search that for you",
+                name: "query",
+                description: "What to Search for",
                 type: 3,
                 max_length: 100,
                 required: true
@@ -514,7 +514,7 @@ const commands = [
 	},
 	{
         name: "setnick",
-        description: "Set the nickname of an user",
+        description: "Set the nickname of a user",
         dm_permission: false,
         options: [
             {
@@ -669,7 +669,7 @@ const commands = [
     },
     {
         name: "unban",
-        description: "Unban an user from the server",
+        description: "Unban a user from the server",
         dm_permission: false,
         options: [
             {
@@ -749,7 +749,7 @@ const commands = [
     },
     {
         name: "user",
-        description: "Get information about an user",
+        description: "Get informations about a user",
         dm_permission: true,
         integration_types: [0, 1],
         contexts: [0, 1, 2],
