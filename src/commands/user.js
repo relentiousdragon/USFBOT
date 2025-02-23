@@ -2,7 +2,7 @@ const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
-    	.setName('user').setDescription('Get informations about an user')
+    	.setName('user').setDescription('Get information about an user')
     	.addUserOption(option=>option.setName('target').setDescription('User you want to view'))
     	.setDMPermission(true),
     async execute(interaction) {
@@ -11,7 +11,7 @@ module.exports = {
         let created = Math.floor(target.createdTimestamp/1000)
         const userEmbed = new EmbedBuilder()
         	.setColor(0x00ffff)
-        	.setTitle(`${target.username} Informations`)
+        	.setTitle(`${target.username} Information`)
         	.setThumbnail(`${target.displayAvatarURL({size:2048})}`)
         	.addFields(
                 {name: "Username and ID", value: `${target.username} | ${target.id}`},
