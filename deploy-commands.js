@@ -749,7 +749,7 @@ const commands = [
     },
     {
         name: "user",
-        description: "Get informations about an user",
+        description: "Get information about an user",
         dm_permission: true,
         integration_types: [0, 1],
         contexts: [0, 1, 2],
