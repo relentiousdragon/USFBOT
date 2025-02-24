@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionsBitField, SlashCommandBuilder, MessageFlags } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -7,7 +7,7 @@ module.exports = {
     	.addStringOption(option=>option.setName('reason').setDescription('Reason of the unlock').setRequired(false))
     	.setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply({ephemeral: true});
+        await interaction.deferReply({flags: MessageFlags.Ephemeral});
         if (interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
             if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
                 return interaction.editReply(`The bot missing the required permission to manage this channel: ManageChannels`);
@@ -21,7 +21,7 @@ module.exports = {
                     .setDescription(`Unlocked for reason: ${reason}`)
                     .setTimestamp();
                 channel.permissionOverwrites.edit(interaction.guild.id, { SendMessages: true, AddReactions: true, SendMessagesInThreads: true, CreatePublicThreads: true, CreatePrivateThreads: true });
-                interaction.editReply({content: `Successfully unlocked ${channel}`, ephemeral: true})
+                interaction.editReply({content: `Successfully unlocked ${channel}`, flags: MessageFlags.Ephemeral})
                 return channel.send({embeds: [UnlockMessage]});
             } catch(e) {
                 const { erbed } = require('../embeds/embeds.js')
@@ -29,7 +29,7 @@ module.exports = {
                 return interaction.editReply({ embeds: [erbed] })
             }
         } else {
-            return interaction.editReply({content: `You don't have the required permission to run this command!`, ephemeral: true});
+            return interaction.editReply({content: `You don't have the required permission to run this command!`, flags: MessageFlags.Ephemeral});
         }
     },
 };

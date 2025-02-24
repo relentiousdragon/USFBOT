@@ -1,4 +1,4 @@
-const { PermissionsBitField, SlashCommandBuilder } = require('discord.js')
+const { PermissionsBitField, SlashCommandBuilder, MessageFlags } = require('discord.js')
 const { announce } = require('../modals/announceModal.js')
 const { tit, desc } = require('../rows/announceRows.js')
 //
@@ -9,7 +9,7 @@ module.exports = {
         .addMentionableOption(option=>option.setName('mention').setDescription('User/Role to mention').setRequired(false)),
     async execute(interaction) {
         if (!(interaction.member.permissions.has(PermissionsBitField.Flags.Administrator))) {
-            return interaction.reply({ content: 'Unauthorized to execute the action! Only Administrators are allowed', ephemeral: true })
+            return interaction.reply({ content: 'Unauthorized to execute the action! Only Administrators are allowed', flags: MessageFlags.Ephemeral })
         }
         const channel = interaction.options.getChannel('channel') ?? interaction.channel
         const mention = interaction.options.getMentionable('mention')

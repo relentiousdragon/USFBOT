@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { reportlog } = require('../../config.json');
 //
 module.exports = {
@@ -12,7 +12,7 @@ module.exports = {
         .addAttachmentOption(option=>option.setName('proof').setDescription('Proof about your report'))
         .setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true })
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const type = interaction.options.getString('type')
         const text = interaction.options.getString('description')
         const proof = interaction.options.getAttachment('proof')
@@ -37,7 +37,7 @@ module.exports = {
         	.setEmoji('✅');
         const row = new ActionRowBuilder()
         	.addComponents(no, yes);
-        const message = await interaction.editReply({ embeds: [confirmation], components: [row], ephemeral: true })
+        const message = await interaction.editReply({ embeds: [confirmation], components: [row], flags: MessageFlags.Ephemeral })
         try {
             const confirmer = await message.awaitMessageComponent({ time: 60000 })
             if (confirmer.customId === 'cancelled') {
@@ -55,11 +55,11 @@ module.exports = {
             report.setImage(`attachment://${proof.name}`)
             reportch.send({ embeds: [report], files: [proof] })
             confirmation.setColor(0x00ff00).setTitle('USFBot Report System').setDescription('Request Registred');
-            return interaction.editReply({ content: '', embeds: [confirmation], components: [], ephemeral: true })
+            return interaction.editReply({ content: '', embeds: [confirmation], components: [], flags: MessageFlags.Ephemeral })
         } else {
             reportch.send({ embeds: [report] })
             confirmation.setColor(0x00ff00).setTitle('USFBot Report System').setDescription('Request Registred');
-            return interaction.editReply({ content: '', embeds: [confirmation], components: [], ephemeral: true })
+            return interaction.editReply({ content: '', embeds: [confirmation], components: [], flags: MessageFlags.Ephemeral })
         }
 
     }

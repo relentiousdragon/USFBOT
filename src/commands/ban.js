@@ -1,4 +1,4 @@
-const { PermissionsBitField, SlashCommandBuilder, EmbedBuilder } = require('discord.js')
+const { PermissionsBitField, SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js')
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -6,7 +6,7 @@ module.exports = {
         .addUserOption(option=>option.setName('target').setDescription('Member to Ban').setRequired(true))
         .addStringOption(option=>option.setName('reason').setDescription('Ban Reason')),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true })
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const member = interaction.options.getMember('target')
         const target = await interaction.guild.members.fetch(member.user.id)
         const reason = interaction.options.getString('reason') ?? 'No reason provided'

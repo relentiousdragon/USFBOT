@@ -1,4 +1,4 @@
-const { ActionRowBuilder, EmbedBuilder, ModalBuilder, PermissionsBitField, SlashCommandBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { ActionRowBuilder, EmbedBuilder, ModalBuilder, PermissionsBitField, SlashCommandBuilder, TextInputBuilder, TextInputStyle, MessageFlags } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -77,10 +77,10 @@ module.exports = {
                     if (image) {
                         embed.setImage(`attachment://${image.name}`);
                         interaction.channel.send({embeds: [embed], files: [image] });
-                        return interaction.reply({content: 'Embed Sent', ephemeral: true});
+                        return interaction.reply({content: 'Embed Sent', flags: MessageFlags.Ephemeral });
                     }
                     interaction.channel.send({embeds: [embed] });
-                    return interaction.reply({content: 'Embed Sent', ephemeral: true});
+                    return interaction.reply({content: 'Embed Sent', flags: MessageFlags.Ephemeral });
                 })
                 .catch(error =>{
                     console.error(error);

@@ -1,4 +1,4 @@
-const { ChannelType, EmbedBuilder, SlashCommandBuilder, PermissionsBitField } = require('discord.js')
+const { ChannelType, EmbedBuilder, SlashCommandBuilder, PermissionsBitField, MessageFlags } = require('discord.js')
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,7 +8,7 @@ module.exports = {
         .addStringOption(option=>option.setName('reason').setDescription('Move reason').setMaxLength(200))
         .setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true })
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const member = interaction.options.getMember('target')
         const target = await interaction.guild.members.fetch(member.user.id)
         const channel = interaction.options.getChannel('channel')

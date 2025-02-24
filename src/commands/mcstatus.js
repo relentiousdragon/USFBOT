@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const axios = require('axios');
 const { discord } = require('../../config.json');
 const fs = require('fs')
@@ -18,7 +18,7 @@ module.exports = {
                 return status;
             } catch (error) {
                 console.error('Error during status fetch:', error);
-                interaction.editReply({ content: `An error occurred while fetching the status of the requested server!\n${error}\nReport to developers through our [Discord Server]${discord}\n\nIs the server an Aternos/exaroton server? Please check [this page](https://usf.instatus.com/clpk5xl9l69900banb6k6cb9tk)`, ephemeral: true });
+                interaction.editReply({ content: `An error occurred while fetching the status of the requested server!\n${error}\nReport to developers through our [Discord Server]${discord}\n\nIs the server an Aternos/exaroton server? Please check [this page](https://usf.instatus.com/clpk5xl9l69900banb6k6cb9tk)`, flags: MessageFlags.Ephemeral });
             }
         }
         const status = await getStatus();

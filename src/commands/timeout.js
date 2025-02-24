@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionsBitField, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { discord } = require('../../config.json');
 var ms = require('ms');
 //
@@ -10,7 +10,7 @@ module.exports = {
     	.addStringOption(option=>option.setName('reason').setDescription('Reason of the timeout'))
     	.setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const member = interaction.options.getMember('target');
         const target = await interaction.guild.members.fetch(member.user.id)
         let errorcase = new EmbedBuilder()
@@ -37,14 +37,14 @@ module.exports = {
                     console.error(error);
                     timeoutEmbed.setFooter({ text: `Could not DM the user`});
                 }
-                return interaction.editReply({embeds: [timeoutEmbed], ephemeral: true});
+                return interaction.editReply({embeds: [timeoutEmbed], flags: MessageFlags.Ephemeral});
             } else {
                 errorcase.setDescription(`There was a permission error while trying to execute this command. Common causes:\n- You do not have the permission to timeout the user.\n- The bot does not have the permission to perform this action.\nIf you believe this is an error, feel free to report it in our [Discord Server](${discord})`);
-                return interaction.editReply({embeds: [errorcase], ephemeral: true});
+                return interaction.editReply({embeds: [errorcase], flags: MessageFlags.Ephemeral});
             }
         } else {
             errorcase.setDescription('You are missing the required permission to run this command: `ModerateMembers`');
-            return interaction.editReply({embeds: [errorcase], ephemeral: true});
+            return interaction.editReply({embeds: [errorcase], flags: MessageFlags.Ephemeral});
         }
     },
 };
