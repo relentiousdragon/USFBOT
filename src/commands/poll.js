@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionsBitField, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionsBitField, EmbedBuilder, MessageFlags } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -17,7 +17,7 @@ module.exports = {
         .addStringOption(option=>option.setName('option10').setDescription('Option 10'))
     	.setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply({ephemeral: true});
+        await interaction.deferReply({flags: MessageFlags.Ephemeral});
         if (interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const message = interaction.options.getString('message');
             const option1 = interaction.options.getString('option1');
@@ -65,7 +65,7 @@ module.exports = {
                 options=2
                 poll.setDescription(`- 1️⃣ ${option1}\n- 2️⃣ ${option2}`);
             }
-            interaction.editReply({content: 'Poll sent!', ephemeral: true});
+            interaction.editReply({content: 'Poll sent!', flags: MessageFlags.Ephemeral});
             const reply = await interaction.channel.send({embeds: [poll], fetchReply: true});
             reply.react('1️⃣');
             reply.react('2️⃣');
@@ -86,7 +86,7 @@ module.exports = {
             	.setColor(0xff0000)
             	.setTitle('Missing permission')
             	.setDescription('I\'m sorry, you don\'t have the required permission to run this command (Administrator)');
-            return interaction.editReply({embeds:[noperm], ephemeral: true});
+            return interaction.editReply({embeds:[noperm], flags: MessageFlags.Ephemeral});
         }
     },
 };

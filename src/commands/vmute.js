@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionsBitField, SlashCommandBuilder } = require('discord.js')
+const { EmbedBuilder, PermissionsBitField, SlashCommandBuilder, MessageFlags } = require('discord.js')
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -7,7 +7,7 @@ module.exports = {
         .addStringOption(option=>option.setName('reason').setDescription('voice mute reason').setMaxLength(200))
         .setDMPermission(false),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true })
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const member = interaction.options.getMember('target')
         const target = await interaction.guild.members.fetch(member.user.id)
         const reason = interaction.options.getString('reason') ?? `No Reason Provided`

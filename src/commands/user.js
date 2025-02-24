@@ -2,7 +2,7 @@ const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
-    	.setName('user').setDescription('Get information about an user')
+    	.setName('user').setDescription('Get information about a user')
     	.addUserOption(option=>option.setName('target').setDescription('User you want to view'))
     	.setDMPermission(true),
     async execute(interaction) {

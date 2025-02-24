@@ -3,7 +3,7 @@ const {
   SlashCommandBuilder, 
   ActionRowBuilder, 
   StringSelectMenuBuilder, 
-  ComponentType } = require('discord.js');
+  ComponentType, MessageFlags } = require('discord.js');
 const axios = require('axios');
 const SerpApi = require('google-search-results-nodejs');
 const { GOOGLE_API_KEY, GOOGLE_CSE_ID, SERPAPI_KEY } = require('../../config.json');
@@ -324,7 +324,7 @@ module.exports = {
 
     collector.on('collect', async i => {
       if (i.user.id !== interaction.user.id) {
-        await i.reply({ content: "This isn't your search.", ephemeral: true });
+        await i.reply({ content: "This isn't your search.", flags: MessageFlags.Ephemeral });
         return;
       }
       const selectedIndex = parseInt(i.values[0]);

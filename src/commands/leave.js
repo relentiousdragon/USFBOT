@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js')
+const { SlashCommandBuilder, MessageFlags } = require('discord.js')
 const { team } = require('../../config.json')
 //
 module.exports = {
@@ -6,7 +6,7 @@ module.exports = {
         .setName('leave').setDescription('Team Only')
         .addStringOption(option=>option.setName('guild').setDescription('Guild').setRequired(true)),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         if (!(team.includes(interaction.user.id))) {
             return interaction.editReply('Unauthorised!')
         }
