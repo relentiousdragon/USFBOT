@@ -95,7 +95,7 @@ module.exports = {
       if (!available) {
         const offlineEmbed = new EmbedBuilder()
           .setTitle(`Ping Results for ${host}`)
-          .setDescription('🔴 Offline\n-# Please note that ICMP ping may require elevated privileges or may be blocked by some hosts/firewalls.')
+          .setDescription('🔴 Offline\n-# Please note that this may be wrong. The pinged IP address may blocks requests from some addresses')
           .setColor(0xFF0000)
           .setTimestamp()
           .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ size: 2048 }) });
