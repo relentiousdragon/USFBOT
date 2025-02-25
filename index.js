@@ -59,7 +59,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
         if (now<expirationTime) {
             const expiredTimestamp = Math.round(expirationTime / 1000);
-            interaction.reply({ content: `Please wait <t:${expiredTimestamp}:R> more second(s)`, flags: MessageFlags.s });
+            interaction.reply({ content: `Please wait <t:${expiredTimestamp}:R> more second(s)`, flags: MessageFlags.Ephemeral });
             return;
         }
     }

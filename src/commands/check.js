@@ -15,7 +15,7 @@ function isValidDomain(domain) {
 //
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('tcp-ping')
+    .setName('check')
     .setDescription('Ping an IP/Domain/URL/Host')
     .addStringOption(option =>
       option.setName('target')
