@@ -95,7 +95,7 @@ module.exports = {
       if (!available) {
         const offlineEmbed = new EmbedBuilder()
           .setTitle(`Ping Results for ${host}`)
-          .setDescription('🔴 Offline')
+          .setDescription('🔴 Offline\n-# Please note that ICMP ping may require elevated privileges or may be blocked by some hosts/firewalls.')
           .setColor(0xFF0000)
           .setTimestamp()
           .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ size: 2048 }) });
@@ -139,7 +139,6 @@ module.exports = {
           .setColor(0x1d4ed8)
           .addFields(...fields)
           .setTimestamp()
-          .setThumbnail("https://images-ext-1.discordapp.net/external/h7VD-9eIhCVG_iXbz34XIIcV_y0YhRBOpwXKIMzXzLc/%3Fformat%3Dwebp%26width%3D1000%26height%3D1000/https/images-ext-1.discordapp.net/external/ko5VNLbcv3oQRjZ5nOrb32zMTs90Z8-EMQ2zDYtVGiA/%253Fformat%253Dwebp%2526width%253D1000%2526height%253D1000/https/images-ext-1.discordapp.net/external/bFQp5NiyMi6YMWpRoRXGtIxphADOtlSR6ZsYI9CYm8s/%25253Fsize%25253D2048/https/cdn.discordapp.com/icons/1238466262456340480/af28dbe35acf0961072a7c500d1faaeb.webp?format=webp&width=1000&height=1000")
           .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ size: 2048 }) });
         
         return await interaction.editReply({ embeds: [pingEmbed] });
