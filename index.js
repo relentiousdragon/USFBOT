@@ -1,6 +1,6 @@
 const fs = require('node:fs')
 const path = require('node:path')
-const { ActivityType, Client, Collection, EmbedBuilder, Events, GatewayIntentBits } = require('discord.js')
+const { ActivityType, Client, Collection, EmbedBuilder, Events, GatewayIntentBits, MessageFlags } = require('discord.js')
 const { token, bannedGuilds, bannedUsers, joinlog, leavelog } = require('./config.json')
 const client = new Client({ 
     intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages ], 
@@ -59,7 +59,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
         if (now<expirationTime) {
             const expiredTimestamp = Math.round(expirationTime / 1000);
-            interaction.reply({ content: `Please wait <t:${expiredTimestamp}:R> more second(s)`, ephemeral: true });
+            interaction.reply({ content: `Please wait <t:${expiredTimestamp}:R> more second(s)`, flags: MessageFlags.s });
             return;
         }
     }
@@ -75,9 +75,9 @@ client.on(Events.InteractionCreate, async interaction => {
         const { erbed } = require('./src/embeds/index-embeds.js')
         erbed.setFooter(`${error}`)
         if (interaction.replied) {
-            interaction.editReply({ embeds: [erbed], ephemeral: true })
+            interaction.editReply({ embeds: [erbed], flags: MessageFlags.Ephemeral })
         } else {
-            interaction.reply({ embeds: [erbed], ephemeral: true })
+            interaction.reply({ embeds: [erbed], flags: MessageFlags.Ephemeral })
         }
     }
 })

@@ -502,6 +502,22 @@ const commands = [
             }
         ]
     },
+    {
+        name: "tcp-ping",
+        description: "Ping an IP/Domain/URL/Host",
+        dm_permission: true,
+        integration_types: [0, 1],
+        contexts: [0, 1, 2],
+        options: [
+            {
+                name: "target",
+                description: "Enter an IP address, domain, URL, or host to ping",
+                type: 3,
+                max_length: 100,
+                required: true
+            }
+        ]
+    },
 	{
 		name: "server",
 		description: "Display info about this server",
