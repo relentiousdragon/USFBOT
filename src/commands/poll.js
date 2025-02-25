@@ -66,7 +66,7 @@ module.exports = {
                 poll.setDescription(`- 1️⃣ ${option1}\n- 2️⃣ ${option2}`);
             }
             interaction.editReply({content: 'Poll sent!', flags: MessageFlags.Ephemeral});
-            const reply = await interaction.channel.send({embeds: [poll], fetchReply: true});
+            const reply = await interaction.channel.send({embeds: [poll], withReply: true});
             reply.react('1️⃣');
             reply.react('2️⃣');
             switch (options) {
