@@ -43,7 +43,7 @@ async function fetchGoogleResults(query) {
 async function fetchDuckDuckGoResults(query) {
   try {
     const response = await axios.get(`https://api.duckduckgo.com/`, {
-      params: { q: query, format: 'json', no_html: 1, no_redirect: 1, kp: 1 }
+      params: { q: query, format: 'json', no_html: 1, no_redirect: 1, kp: 1, safe: 'active' }
     });
     const data = response.data;
     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
@@ -103,7 +103,8 @@ async function fetchYahooResults(query) {
       engine: 'yahoo',
       p: query,
       count: 5,
-      vm: 'r'
+      vm: 'r',
+      safe: 'active'
     }, (result) => {
       if (result?.error) {
         return reject(new Error(result.error));
