@@ -19,7 +19,7 @@ async function fetchGoogleResults(query) {
   }
   try {
     const response = await axios.get(`https://www.googleapis.com/customsearch/v1`, {
-      params: { key: apiKey, cx: cx, q: query, num: 5 }
+      params: { key: apiKey, cx: cx, q: query, num: 5, safe: 'active' }
     });
     if (response.data.error) {
       console.error('Google API Error:', response.data.error.message);
@@ -43,7 +43,7 @@ async function fetchGoogleResults(query) {
 async function fetchDuckDuckGoResults(query) {
   try {
     const response = await axios.get(`https://api.duckduckgo.com/`, {
-      params: { q: query, format: 'json', no_html: 1, no_redirect: 1 }
+      params: { q: query, format: 'json', no_html: 1, no_redirect: 1, kp: 1 }
     });
     const data = response.data;
     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
@@ -78,7 +78,8 @@ async function fetchBingResults(query) {
     search.json({
       engine: 'bing',
       q: query,
-      count: 5
+      count: 5,
+      safe: 'active'
     }, (result) => {
       if (result?.error) {
         return reject(new Error(result.error));
@@ -101,7 +102,8 @@ async function fetchYahooResults(query) {
     search.json({
       engine: 'yahoo',
       p: query,
-      count: 5
+      count: 5,
+      vm: 'r'
     }, (result) => {
       if (result?.error) {
         return reject(new Error(result.error));
@@ -124,7 +126,8 @@ async function fetchYandexResults(query) {
     search.json({
       engine: 'yandex',
       text: query,
-      num: 5
+      num: 5,
+      safe: 'active'
     }, (result) => {
       if (result?.error) {
         return reject(new Error(result.error));
