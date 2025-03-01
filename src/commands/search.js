@@ -262,11 +262,9 @@ module.exports = {
       }
     }
 
-    const thumbnail = "https://images-ext-1.discordapp.net/external/h7VD-9eIhCVG_iXbz34XIIcV_y0YhRBOpwXKIMzXzLc/%3Fformat%3Dwebp%26width%3D1000%26height%3D1000/https/images-ext-1.discordapp.net/external/ko5VNLbcv3oQRjZ5nOrb32zMTs90Z8-EMQ2zDYtVGiA/%253Fformat%253Dwebp%2526width%253D1000%2526height%253D1000/https/images-ext-1.discordapp.net/external/bFQp5NiyMi6YMWpRoRXGtIxphADOtlSR6ZsYI9CYm8s/%25253Fsize%25253D2048/https/cdn.discordapp.com/icons/1238466262456340480/af28dbe35acf0961072a7c500d1faaeb.webp?format=webp&width=1000&height=1000";
     const googleEmbed = new EmbedBuilder()
       .setColor(googleEngine.color || 0x4285F4)
       .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-      .setThumbnail(thumbnail)
       .setTimestamp()
       .setTitle(`${googleEngine.emoji} ${query}`);
 
@@ -284,7 +282,6 @@ module.exports = {
       let embed = new EmbedBuilder()
         .setColor(engine.color || 0x00FFFF)
         .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-        .setThumbnail(thumbnail)
         .setTimestamp()
         .setTitle(`${engine.emoji} ${query}`);
 
@@ -348,7 +345,6 @@ module.exports = {
             .setTitle(`${engine.emoji} ${query}`)
             .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
             .setDescription(`[Search for ${query} on ${engine.emoji} ${engine.name}](${engine.url})`)
-            .setThumbnail(thumbnail)
             .setTimestamp();
           await interaction.editReply({ embeds: [loadingEmbed] });
 
@@ -357,7 +353,6 @@ module.exports = {
           let newEmbed = new EmbedBuilder()
             .setColor(engine.color || 0x00FFFF)
             .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setThumbnail(thumbnail)
             .setTimestamp()
             .setTitle(`${engine.emoji} ${query}`);
 
