@@ -358,7 +358,7 @@ module.exports = {
 
           if (results && results.length > 0) {
             newEmbed.setDescription(
-              results.map((r, i) =>
+              `[${query}](<${engine.url}>)\n`+results.map((r, i) =>
                 `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
               ).join('\n\n')
             );
