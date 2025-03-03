@@ -17,7 +17,8 @@ module.exports = {
                 const data = response.data;
                 let status = {
                     serverStatus: data.version === '§c● Offline' ? 'Online' : 'Offline',
-                    maxplayers: data.maxplayers
+                    maxplayers: data.maxplayers,
+                    players: data.players
                 }
 
                 return status
