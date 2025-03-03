@@ -271,7 +271,7 @@ module.exports = {
     if (googleResults && googleResults.length > 0) {
       googleEmbed.setDescription(
         googleResults.map((r, i) =>
-          `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
+          `[${query}](${engine.url})\n${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
         ).join('\n\n')
       );
     } else {
