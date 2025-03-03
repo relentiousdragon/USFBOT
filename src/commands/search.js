@@ -1,15 +1,9 @@
-const { 
-  EmbedBuilder, 
-  SlashCommandBuilder, 
-  ActionRowBuilder, 
-  StringSelectMenuBuilder, 
-  ComponentType, MessageFlags } = require('discord.js');
+const { ActionRowBuilder, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
-const SerpApi = require('google-search-results-nodejs');
 const { GOOGLE_API_KEY, GOOGLE_CSE_ID, SERPAPI_KEY } = require('../../config.json');
-
-const search = new SerpApi.GoogleSearch(SERPAPI_KEY)
-
+const SerpApi = require('google-search-results-nodejs');
+const search = new SerpApi.GoogleSearch(SERPAPI_KEY);
+//
 async function fetchGoogleResults(query) {
   const apiKey = GOOGLE_API_KEY;
   const cx = GOOGLE_CSE_ID;
@@ -39,7 +33,7 @@ async function fetchGoogleResults(query) {
     return null;
   }
 }
-
+//
 async function fetchDuckDuckGoResults(query) {
   try {
     const response = await axios.get(`https://api.duckduckgo.com/`, {
@@ -72,7 +66,7 @@ async function fetchDuckDuckGoResults(query) {
     return null;
   }
 }
-
+//
 async function fetchBingResults(query) {
   return new Promise((resolve, reject) => {
     search.json({
@@ -96,7 +90,7 @@ async function fetchBingResults(query) {
     });
   });
 }
-
+//
 async function fetchYahooResults(query) {
   return new Promise((resolve, reject) => {
     search.json({
@@ -121,7 +115,7 @@ async function fetchYahooResults(query) {
     });
   });
 }
-
+//
 async function fetchYandexResults(query) {
   return new Promise((resolve, reject) => {
     search.json({
@@ -148,245 +142,221 @@ async function fetchYandexResults(query) {
 //
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('search')
-    .setDescription('Search the web')
-    .addStringOption(option => 
-      option.setName('query')
-        .setDescription('What to search for')
-        .setRequired(true)
-        .setMaxLength(100)
-    )
+    .setName('search').setDescription('Search the web')
+    .addStringOption(option => option.setName('query').setDescription('What to search for').setRequired(true).setMaxLength(100))
+    .addStringOption(option => option.setName('deepsearch').setDescription('Search the web deeply').setRequired(false).addChoices(
+      { name: 'Google', value: 'google' },
+      { name: 'DuckDuckGo', value: 'duckduckgo' },
+      { name: 'Bing', value: 'bing' },
+      { name: 'Yandex', value: 'yandex' },
+      { name: 'Yahoo', value: 'yahoo' }
+    ))
     .setDMPermission(false),
-
   async execute(interaction) {
     await interaction.deferReply();
     const query = interaction.options.getString('query');
+    const deepsearch = interaction.options.getString('deepsearch');
     const encodedQuery = encodeURIComponent(query);
-    const engines = [
-      {
-        name: 'Google',
-        url: `https://google.com/search?q=${encodedQuery}`,
-        api: fetchGoogleResults,
-        color: 0x4285F4,
-        emoji: '<:google:1266016555662184606>',
-        enabled: !!GOOGLE_API_KEY && !!GOOGLE_CSE_ID,
-        preloaded: true
-      },
-      {
-        name: 'DuckDuckGo',
-        url: `https://duckduckgo.com/?q=${encodedQuery}`,
-        api: fetchDuckDuckGoResults,
-        color: 0xDE5833,
-        emoji: '<:duckduckgo:1266021571508572261>',
-        enabled: true,
-        preloaded: true
-      },
-      {
-        name: 'Bing',
-        url: `https://bing.com/search?q=${encodedQuery}`,
-        api: fetchBingResults,
-        color: 0x00809D,
-        emoji: '<:bing:1266020917314850907>',
-        enabled: !!SERPAPI_KEY,
-        preloaded: false
-      },
-      {
-        name: 'Yandex',
-        url: `https://yandex.com/search/?text=${encodedQuery}`,
-        api: fetchYandexResults,
-        color: 0xFF0000,
-        emoji: '<:yandex:1266020634484539515>',
-        enabled: !!SERPAPI_KEY,
-        preloaded: false
-      },
-      {
-        name: 'Yahoo',
-        url: `https://search.yahoo.com/search?p=${encodedQuery}`,
-        api: fetchYahooResults,
-        color: 0x720E9E,
-        emoji: '<:yahoo:1266019185100718155>',
-        enabled: !!SERPAPI_KEY,
-        preloaded: false
-      },
-      {
-        name: 'Brave',
-        url: `https://search.brave.com/search?q=${encodedQuery}`,
-        color: 0xFF2000,
-        emoji: '<:brave:1266017410109149287>',
-        preloaded: true
-      },
-      {
-        name: 'Ecosia',
-        url: `https://www.ecosia.org/search?q=${encodedQuery}`,
-        color: 0x4CAF50,
-        emoji: '<:ecosia:1266017707766055045>',
-        preloaded: true
-      },
-      {
-        name: 'Qwant',
-        url: `https://www.qwant.com/?q=${encodedQuery}`,
-        color: 0x3DA4F7,
-        emoji: '<:qwant:1266021495981998172>',
-        preloaded: true
-      },
-      { 
-        name: 'Swisscows',
-        url: `https://swisscows.com/it/web?query=${encodedQuery}`,
-        color: 0x3DA4F7,
-        emoji: '<:swisscows:1266020983651958785>',
-        preloaded: true
-      },
-      {
-        name: 'Gibiru',
-        url: `https://gibiru.com/results.html?q=${encodedQuery}`,
-        color: 0x3DA4F7,
-        emoji: '<:gibiru:1266020402749247581>',
-        preloaded: true
-      },
-      {
-        name: 'Lilo',
-        url: `https://search.lilo.org/?q=${encodedQuery}`,
-        color: 0x3DA4F7,
-        emoji: '<:lilo:1266019331301576754>',
-        preloaded: true
-      }
-    ];
-
-    const googleEngine = engines.find(engine => engine.name === 'Google');
-    let googleResults = null;
-    if (googleEngine && googleEngine.enabled && googleEngine.api) {
-      try {
-        googleResults = await googleEngine.api(query);
-      } catch (error) {
-        console.error(`Google API Error: ${error.message}`);
-      }
-    }
-
-    const googleEmbed = new EmbedBuilder()
-      .setColor(googleEngine.color || 0x4285F4)
-      .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-      .setTimestamp()
-      .setTitle(`${googleEngine.emoji} ${query}`);
-
-    if (googleResults && googleResults.length > 0) {
-      googleEmbed.setDescription(
-        googleResults.map((r, i) =>
-          `[${query}](${engine.url})\n${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-        ).join('\n\n')
-      );
-    } else {
-      googleEmbed.setDescription(`No results found\n[Search for ${query} on ${googleEngine.emoji} ${googleEngine.name}](${googleEngine.url})`);
-    }
-
-    const pages = engines.map(engine => {
-      let embed = new EmbedBuilder()
-        .setColor(engine.color || 0x00FFFF)
-        .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-        .setTimestamp()
-        .setTitle(`${engine.emoji} ${query}`);
-
-      if (engine.name === 'Google') {
-        embed = googleEmbed;
-      } else if (!engine.api) {
-        embed.setDescription(`[Open ${engine.emoji} ${engine.name} Search](${engine.url})`);
-      } else {
-        embed.setDescription(`Click to load results from ${engine.emoji} ${engine.name}:\n[${query}](${engine.url})`);
-      }
-      return {
-        name: engine.name,
-        engine,
-        embed,
-        url: engine.url,
-        cachedEmbed: null
-      };
-    });
-
-    const selectMenu = new StringSelectMenuBuilder()
-      .setCustomId('search_engine')
-      .setPlaceholder('Choose search engine')
-      .addOptions(pages.map((page, index) => ({
-        label: page.name,
-        value: index.toString(),
-        description: `View ${page.name} results`,
-        emoji: engines[index].emoji
-      })));
-
-    const actionRow = new ActionRowBuilder().addComponents(selectMenu);
-
-    const initialResponse = await interaction.editReply({
-      embeds: [googleEmbed],
-      components: [actionRow]
-    });
-
-    const collector = initialResponse.createMessageComponentCollector({
-      componentType: ComponentType.StringSelect,
-      time: 60000
-    });
-
-    collector.on('collect', async i => {
-      if (i.user.id !== interaction.user.id) {
-        await i.reply({ content: "This isn't your search.", flags: MessageFlags.Ephemeral });
+    if (deepsearch) {
+      const engine = [
+        {
+          name: 'Google',
+          url: `https://google.com/search?q=${encodedQuery}`,
+          api: fetchGoogleResults,
+          color: 0x4285F4,
+          emoji: '<:google:1266016555662184606>',
+          enabled: !!GOOGLE_API_KEY && !!GOOGLE_CSE_ID,
+          preloaded: true
+        },
+        {
+          name: 'DuckDuckGo',
+          url: `https://duckduckgo.com/?q=${encodedQuery}`,
+          api: fetchDuckDuckGoResults,
+          color: 0xDE5833,
+          emoji: '<:duckduckgo:1266021571508572261>',
+          enabled: true,
+          preloaded: true
+        },
+        {
+          name: 'Bing',
+          url: `https://bing.com/search?q=${encodedQuery}`,
+          api: fetchBingResults,
+          color: 0x00809D,
+          emoji: '<:bing:1266020917314850907>',
+          enabled: !!SERPAPI_KEY,
+          preloaded: false
+        },
+        {
+          name: 'Yandex',
+          url: `https://yandex.com/search/?text=${encodedQuery}`,
+          api: fetchYandexResults,
+          color: 0xFF0000,
+          emoji: '<:yandex:1266020634484539515>',
+          enabled: !!SERPAPI_KEY,
+          preloaded: false
+        },
+        {
+          name: 'Yahoo',
+          url: `https://search.yahoo.com/search?p=${encodedQuery}`,
+          api: fetchYahooResults,
+          color: 0x720E9E,
+          emoji: '<:yahoo:1266019185100718155>',
+          enabled: !!SERPAPI_KEY,
+          preloaded: false
+        },
+      ];
+      //
+      if (deepsearch == 'google') {
+        const googleEngine = engine.find(engine => engine.name === 'Google');
+        let googleResults = null;
+        if (googleEngine && googleEngine.enabled && googleEngine.api) {
+          try {
+            googleResults = await googleEngine.api(query);
+          } catch (error) {
+            console.error(`Google API Error: ${error.message}`);
+          }
+        }
+        const googleEmbed = new EmbedBuilder()
+          .setColor(googleEngine.color || 0x4285F4)
+          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setTimestamp()
+          .setTitle(`${googleEngine.emoji} ${query}`);
+        if (googleResults && googleResults.length > 0) {
+          googleEmbed.setDescription(
+            `ORIGINAL SEARCH LINK: [${query}](${engine[0].url})\n`+googleResults.map((r, i) =>
+              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
+            ).join('\n\n')
+          );
+        } else {
+          googleEmbed.setDescription(`No results found\n[Search for ${query} on ${googleEngine.emoji} ${googleEngine.name}](${googleEngine.url})`);
+        }
+        await interaction.editReply({ embeds: [googleEmbed] });
+        return;
+      } else if (deepsearch == 'duckduckgo') {
+        const duckduckgoEngine = engine.find(engine => engine.name === 'DuckDuckGo');
+        let duckduckgoResults = null;
+        if (duckduckgoEngine && duckduckgoEngine.enabled && duckduckgoEngine.api) {
+          try {
+            duckduckgoResults = await duckduckgoEngine.api(query);
+          } catch (error) {
+            console.error(`DuckDuckGo API Error: ${error.message}`);
+          }
+        }
+        const duckduckgoEmbed = new EmbedBuilder()
+          .setColor(duckduckgoEngine.color || 0xDE5833)
+          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setTimestamp()
+          .setTitle(`${duckduckgoEngine.emoji} ${query}`);
+        if (duckduckgoResults && duckduckgoResults.length > 0) {
+          duckduckgoEmbed.setDescription(
+            `ORIGINAL SEARCH LINK: [${query}](${engine[1].url})\n`+duckduckgoResults.map((r, i) =>
+              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
+            ).join('\n\n')
+          );
+        } else {
+          duckduckgoEmbed.setDescription(`No results found\n[Search for ${query} on ${duckduckgoEngine.emoji} ${duckduckgoEngine.name}](${duckduckgoEngine.url})`);
+        }
+        await interaction.editReply({ embeds: [duckduckgoEmbed] });
+        return;
+      } else if (deepsearch == 'bing') {
+        const bingEngine = engine.find(engine => engine.name === 'Bing');
+        let bingResults = null;
+        if (bingEngine && bingEngine.enabled && bingEngine.api) {
+          try {
+            bingResults = await bingEngine.api(query);
+          } catch (error) {
+            console.error(`Bing API Error: ${error.message}`);
+          }
+        }
+        const bingEmbed = new EmbedBuilder()
+          .setColor(bingEngine.color || 0x00809D)
+          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setTimestamp()
+          .setTitle(`${bingEngine.emoji} ${query}`);
+        if (bingResults && bingResults.length > 0) {
+          bingEmbed.setDescription(
+            `ORIGINAL SEARCH LINK: [${query}](${engine[2].url})\n`+bingResults.map((r, i) =>
+              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
+            ).join('\n\n')
+          );
+        } else {
+          bingEmbed.setDescription(`No results found\n[Search for ${query} on ${bingEngine.emoji} ${bingEngine.name}](${bingEngine.url})`);
+        }
+        await interaction.editReply({ embeds: [bingEmbed] });
+        return;
+      } else if (deepsearch == 'yandex') {
+        const yandexEngine = engine.find(engine => engine.name === 'Yandex');
+        let yandexResults = null;
+        if (yandexEngine && yandexEngine.enabled && yandexEngine.api) {
+          try {
+            yandexResults = await yandexEngine.api(query);
+          } catch (error) {
+            console.error(`Yandex API Error: ${error.message}`);
+          }
+        }
+        const yandexEmbed = new EmbedBuilder()
+          .setColor(yandexEngine.color || 0xFF0000)
+          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setTimestamp()
+          .setTitle(`${yandexEngine.emoji} ${query}`);
+        if (yandexResults && yandexResults.length > 0) {
+          yandexEmbed.setDescription(
+            `ORIGINAL SEARCH LINK: [${query}](${engine[3].url})\n`+yandexResults.map((r, i) =>
+              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
+            ).join('\n\n')
+          );
+        } else {
+          yandexEmbed.setDescription(`No results found\n[Search for ${query} on ${yandexEngine.emoji} ${yandexEngine.name}](${yandexEngine.url})`);
+        }
+        await interaction.editReply({ embeds: [yandexEmbed] });
+        return;
+      } else if (deepsearch == 'yahoo') {
+        const yahooEngine = engine.find(engine => engine.name === 'Yahoo');
+        let yahooResults = null;
+        if (yahooEngine && yahooEngine.enabled && yahooEngine.api) {
+          try {
+            yahooResults = await yahooEngine.api(query);
+          } catch (error) {
+            console.error(`Yahoo API Error: ${error.message}`);
+          }
+        }
+        const yahooEmbed = new EmbedBuilder()
+          .setColor(yahooEngine.color || 0x720E9E)
+          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setTimestamp()
+          .setTitle(`${yahooEngine.emoji} ${query}`);
+        if (yahooResults && yahooResults.length > 0) {
+          yahooEmbed.setDescription(
+            `ORIGINAL SEARCH LINK: [${query}](${engine[4].url})\n`+yahooResults.map((r, i) =>
+              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
+            ).join('\n\n')
+          );
+        } else {
+          yahooEmbed.setDescription(`No results found\n[Search for ${query} on ${yahooEngine.emoji} ${yahooEngine.name}](${yahooEngine.url})`);
+        }
+        await interaction.editReply({ embeds: [yahooEmbed] });
         return;
       }
-      const selectedIndex = parseInt(i.values[0]);
-      const selectedPage = pages[selectedIndex];
-      const engine = selectedPage.engine;
-
-      await i.deferUpdate();
-
-      if (engine.api && engine.name !== 'Google') {
-        if (selectedPage.cachedEmbed) {
-          await interaction.editReply({ embeds: [selectedPage.cachedEmbed] });
-          return;
-        }
-        try {
-          const loadingEmbed = new EmbedBuilder()
-            .setColor(engine.color || 0x00FFFF)
-            .setTitle(`${engine.emoji} ${query}`)
-            .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setDescription(`[Search for ${query} on ${engine.emoji} ${engine.name}](${engine.url})`)
-            .setTimestamp();
-          await interaction.editReply({ embeds: [loadingEmbed] });
-
-          const results = engine.enabled ? await engine.api(query) : null;
-
-          let newEmbed = new EmbedBuilder()
-            .setColor(engine.color || 0x00FFFF)
-            .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setTimestamp()
-            .setTitle(`${engine.emoji} ${query}`);
-
-          if (results && results.length > 0) {
-            newEmbed.setDescription(
-              `[${query}](<${engine.url}>)\n`+results.map((r, i) =>
-                `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-              ).join('\n\n')
-            );
-          } else {
-            newEmbed.setDescription(`No results found\n[Search for ${query} on ${engine.emoji} ${engine.name}](${engine.url})`);
-          }
-          selectedPage.cachedEmbed = newEmbed;
-          await interaction.editReply({ embeds: [newEmbed] });
-        } catch (error) {
-          console.error(`${engine.name} API Error:`, error.message);
-          const errorEmbed = new EmbedBuilder()
-            .setColor(engine.color || 0x00FFFF)
-            .setTitle(`${engine.emoji} ${query}`)
-            .setDescription(`[Search for ${query} on ${engine.emoji} ${engine.name}](${engine.url})`)
-            .setTimestamp();
-          await interaction.editReply({ embeds: [errorEmbed] });
-        }
-      } else {
-        await interaction.editReply({ embeds: [selectedPage.embed] });
-      }
-    });
-
-    collector.on('end', async () => {
-      try {
-        await interaction.editReply({ components: [] });
-      } catch (e) {
-        console.error(e);
-      }
-    });
+    } else {
+      const google = `https://google.com/search?q=${encodedQuery}`;
+      const duckduckgo = `https://duckduckgo.com/?q=${encodedQuery}`;
+      const bing = `https://bing.com/search?q=${encodedQuery}`;
+      const yandex = `https://yandex.com/search/?text=${encodedQuery}`;
+      const yahoo = `https://search.yahoo.com/search?p=${encodedQuery}`;
+      const brave = `https://search.brave.com/search?q=${encodedQuery}`;
+      const ecosia = `https://www.ecosia.org/search?q=${encodedQuery}`;
+      const qwant = `https://www.qwant.com/?q=${encodedQuery}`;
+      const swisscows = `https://swisscows.com/it/web?query=${encodedQuery}`;
+      const gibiru = `https://gibiru.com/results.html?q=${encodedQuery}`;
+      const lilo = `https://search.lilo.org/?q=${encodedQuery}`;
+      //
+      const regularSearchEmbed = new EmbedBuilder()
+        .setColor(0x00FFFF)
+        .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+        .setTimestamp()
+        .setDescription(`<:google:1266016555662184606> [${query}](https://google.com/search?q=${encodedQuery})\n<:duckduckgo:1266021571508572261> [${query}](https://duckduckgo.com/?q=${encodedQuery})\n<:bing:1266020917314850907> [${query}](https://bing.com/search?q=${encodedQuery})\n<:yandex:1266020634484539515> [${query}](https://yandex.com/search/?text=${encodedQuery})\n<:yahoo:1266019185100718155> [${query}](https://search.yahoo.com/search?p=${encodedQuery})\n<:brave:1266017410109149287> [${query}](https://search.brave.com/search?q=${encodedQuery})\n<:ecosia:1266017707766055045> [${query}](https://www.ecosia.org/search?q=${encodedQuery})\n<:qwant:1266021495981998172> [${query}](https://www.qwant.com/?q=${encodedQuery})\n<:swisscows:1266020983651958785> [${query}](https://swisscows.com/it/web?query=${encodedQuery})\n<:gibiru:1266020402749247581> [${query}](https://gibiru.com/results.html?q=${encodedQuery})\n<:lilo:1266019331301576754> [${query}](https://search.lilo.org/?q=${encodedQuery})`);
+      await interaction.editReply({ embeds: [regularSearchEmbed] });
+      return;
+    }
   }
-};
+}

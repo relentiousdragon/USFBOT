@@ -515,6 +515,19 @@ const commands = [
                 type: 3,
                 max_length: 100,
                 required: true
+            },
+            {
+                name: "deepsearch",
+                description: "Search the web deeply",
+                type: 3,
+                required: false,
+                choices: [
+                    { name: 'Google', type: 3, value: 'google' },
+                    { name: 'DuckDuckGo', type: 3, value: 'duckduckgo' },
+                    { name: 'Bing', type: 3, value: 'bing' },
+                    { name: 'Yahoo', type: 3, value: 'yahoo' },
+                    { name: 'Yandex', type: 3, value: 'yandex'}
+                ]
             }
         ]
     },
@@ -765,7 +778,7 @@ const commands = [
     },
     {
         name: "user",
-        description: "Get informations about a user",
+        description: "Get information about a user",
         dm_permission: true,
         integration_types: [0, 1],
         contexts: [0, 1, 2],
