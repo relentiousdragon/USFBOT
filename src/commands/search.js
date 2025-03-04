@@ -3,6 +3,17 @@ const axios = require('axios');
 const { GOOGLE_API_KEY, GOOGLE_CSE_ID, SERPAPI_KEY } = require('../../config.json');
 const SerpApi = require('google-search-results-nodejs');
 const search = new SerpApi.GoogleSearch(SERPAPI_KEY);
+const badWords = [
+  "fuck",
+  "fucking",
+  "asshole",
+  "dick",
+  "motherfucker",
+  "porn",
+  "xxx",
+  "hentai",
+];
+
 //
 async function fetchGoogleResults(query) {
   const apiKey = GOOGLE_API_KEY;
@@ -155,6 +166,11 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
     const query = interaction.options.getString('query');
+
+    if (badWords.some(word => query.toLowerCase().includes(word))) {
+      return interaction.editReply("Unable to search for your requested query.\n-# Requested query contains prohibited words.");
+    }
+    
     const deepsearch = interaction.options.getString('deepsearch');
     const encodedQuery = encodeURIComponent(query);
     if (deepsearch) {
@@ -222,8 +238,9 @@ module.exports = {
           .setTimestamp()
           .setTitle(`${googleEngine.emoji} ${query}`);
         if (googleResults && googleResults.length > 0) {
+          googleEmbed.setURL(engine[0].url);
           googleEmbed.setDescription(
-            `ORIGINAL SEARCH LINK: [${query}](${engine[0].url})\n`+googleResults.map((r, i) =>
+            googleResults.map((r, i) =>
               `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
             ).join('\n\n')
           );
@@ -248,8 +265,9 @@ module.exports = {
           .setTimestamp()
           .setTitle(`${duckduckgoEngine.emoji} ${query}`);
         if (duckduckgoResults && duckduckgoResults.length > 0) {
+          duckduckgoEmbed.setURL(engine[1].url);
           duckduckgoEmbed.setDescription(
-            `ORIGINAL SEARCH LINK: [${query}](${engine[1].url})\n`+duckduckgoResults.map((r, i) =>
+            duckduckgoResults.map((r, i) =>
               `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
             ).join('\n\n')
           );
@@ -274,8 +292,9 @@ module.exports = {
           .setTimestamp()
           .setTitle(`${bingEngine.emoji} ${query}`);
         if (bingResults && bingResults.length > 0) {
+          bingEmbed.setURL(engine[2].url);
           bingEmbed.setDescription(
-            `ORIGINAL SEARCH LINK: [${query}](${engine[2].url})\n`+bingResults.map((r, i) =>
+            bingResults.map((r, i) =>
               `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
             ).join('\n\n')
           );
@@ -300,8 +319,9 @@ module.exports = {
           .setTimestamp()
           .setTitle(`${yandexEngine.emoji} ${query}`);
         if (yandexResults && yandexResults.length > 0) {
+          yandexEmbed.setURL(engine[3].url);
           yandexEmbed.setDescription(
-            `ORIGINAL SEARCH LINK: [${query}](${engine[3].url})\n`+yandexResults.map((r, i) =>
+            yandexResults.map((r, i) =>
               `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
             ).join('\n\n')
           );
@@ -326,8 +346,9 @@ module.exports = {
           .setTimestamp()
           .setTitle(`${yahooEngine.emoji} ${query}`);
         if (yahooResults && yahooResults.length > 0) {
+          yahooEmbed.setURL(engine[4].url);
           yahooEmbed.setDescription(
-            `ORIGINAL SEARCH LINK: [${query}](${engine[4].url})\n`+yahooResults.map((r, i) =>
+            yahooResults.map((r, i) =>
               `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
             ).join('\n\n')
           );
