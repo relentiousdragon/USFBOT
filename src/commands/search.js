@@ -7,7 +7,7 @@ const search = new SerpApi.GoogleSearch(SERPAPI_KEY);
 async function filterQuery(query) {
   try {
     const response = await axios.get(`https://www.purgomalum.com/service/json`, {
-      params: { text: query }
+      params: { text: query, fill_char: '#' }
     });
     return response.data.result || '[REDACTED]';
   } catch (error) {
