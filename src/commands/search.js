@@ -250,7 +250,7 @@ module.exports = {
         } else {
           googleEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${googleEngine.emoji} ${googleEngine.name}](${googleEngine.url})`);
         }
-        if (profanityDetected) googleEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' }); await interaction.editReply({ embeds: [googleEmbed] });
+        if (profanityDetected) googleEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' });
         await interaction.editReply({ embeds: [googleEmbed] });
         return;
       } else if (deepsearch == 'duckduckgo') {
@@ -278,7 +278,7 @@ module.exports = {
         } else {
           duckduckgoEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${duckduckgoEngine.emoji} ${duckduckgoEngine.name}](${duckduckgoEngine.url})`);
         }
-        if (profanityDetected) duckduckgoEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' }); await interaction.editReply({ embeds: [duckduckgoEmbed] });
+        if (profanityDetected) duckduckgoEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' });
         await interaction.editReply({ embeds: [duckduckgoEmbed] });
         return;
       } else if (deepsearch == 'bing') {
@@ -306,7 +306,7 @@ module.exports = {
         } else {
           bingEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${bingEngine.emoji} ${bingEngine.name}](${bingEngine.url})`);
         }
-        if (profanityDetected) bingEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' }); await interaction.editReply({ embeds: [bingEmbed] });
+        if (profanityDetected) bingEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' });
         await interaction.editReply({ embeds: [bingEmbed] });
         return;
       } else if (deepsearch == 'yandex') {
@@ -334,7 +334,7 @@ module.exports = {
         } else {
           yandexEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${yandexEngine.emoji} ${yandexEngine.name}](${yandexEngine.url})`);
         }
-        if (profanityDetected) yandexEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' }); await interaction.editReply({ embeds: [yandexEmbed] });
+        if (profanityDetected) yandexEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' });
         await interaction.editReply({ embeds: [yandexEmbed] });
         return;
       } else if (deepsearch == 'yahoo') {
@@ -362,7 +362,7 @@ module.exports = {
         } else {
           yahooEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${yahooEngine.emoji} ${yahooEngine.name}](${yahooEngine.url})`);
         }
-        if (profanityDetected) yahooEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' }); await interaction.editReply({ embeds: [yahooEmbed] });
+        if (profanityDetected) yahooEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' });
         await interaction.editReply({ embeds: [yahooEmbed] });
         return;
       }
@@ -384,7 +384,7 @@ module.exports = {
         .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
         .setTimestamp()
         .setDescription(`<:google:1266016555662184606> [${safeQuery}](https://google.com/search?q=${encodedQuery})\n<:duckduckgo:1266021571508572261> [${safeQuery}](https://duckduckgo.com/?q=${encodedQuery})\n<:bing:1266020917314850907> [${safeQuery}](https://bing.com/search?q=${encodedQuery})\n<:yandex:1266020634484539515> [${safeQuery}](https://yandex.com/search/?text=${encodedQuery})\n<:yahoo:1266019185100718155> [${safeQuery}](https://search.yahoo.com/search?p=${encodedQuery})\n<:brave:1266017410109149287> [${safeQuery}](https://search.brave.com/search?q=${encodedQuery})\n<:ecosia:1266017707766055045> [${safeQuery}](https://www.ecosia.org/search?q=${encodedQuery})\n<:qwant:1266021495981998172> [${safeQuery}](https://www.qwant.com/?q=${encodedQuery})\n<:swisscows:1266020983651958785> [${safeQuery}](https://swisscows.com/it/web?query=${encodedQuery})\n<:gibiru:1266020402749247581> [${safeQuery}](https://gibiru.com/results.html?q=${encodedQuery})\n<:lilo:1266019331301576754> [${safeQuery}](https://search.lilo.org/?q=${encodedQuery})`);
-        if (profanityDetected) regularSearchEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' }); await interaction.editReply({ embeds: [regularSearchEmbed] });
+        if (profanityDetected) regularSearchEmbed.setFooter({ text: 'Results may be unsafe', iconURL:'https://cdn.discordapp.com/emojis/1341764612273737769.webp?size=64&quality=lossless' });
         await interaction.editReply({ embeds: [regularSearchEmbed] });
       return;
     }
