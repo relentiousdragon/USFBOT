@@ -3,18 +3,18 @@ const axios = require('axios');
 const { GOOGLE_API_KEY, GOOGLE_CSE_ID, SERPAPI_KEY } = require('../../config.json');
 const SerpApi = require('google-search-results-nodejs');
 const search = new SerpApi.GoogleSearch(SERPAPI_KEY);
-const badWords = [
-  "fuck",
-  "fucking",
-  "asshole",
-  "dick",
-  "motherfucker",
-  "porn",
-  "xxx",
-  "hentai",
-];
-
 //
+async function filterQuery(query) {
+  try {
+    const response = await axios.get(`https://www.purgomalum.com/service/json`, {
+      params: { text: query, fill_char: '-' }
+    });
+    return response.data.result || '[REDACTED]';
+  } catch (error) {
+    console.error('Purgomalum API error:', error);
+    return '[REDACTED]';
+  }
+}
 async function fetchGoogleResults(query) {
   const apiKey = GOOGLE_API_KEY;
   const cx = GOOGLE_CSE_ID;
@@ -167,12 +167,15 @@ module.exports = {
     await interaction.deferReply();
     const query = interaction.options.getString('query');
 
-    if (badWords.some(word => query.toLowerCase().includes(word))) {
+    /* if (badWords.some(word => query.toLowerCase().includes(word))) {
       return interaction.editReply("Unable to search for your requested query.\n-# Requested query contains prohibited words.");
-    }
-    
+    } */
+
+    const safeQuery = await filterQuery(query);
     const deepsearch = interaction.options.getString('deepsearch');
     const encodedQuery = encodeURIComponent(query);
+    const profanityDetected = safeQuery !== query;
+
     if (deepsearch) {
       const engine = [
         {
@@ -236,7 +239,7 @@ module.exports = {
           .setColor(googleEngine.color || 0x4285F4)
           .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
           .setTimestamp()
-          .setTitle(`${googleEngine.emoji} ${query}`);
+          .setTitle(`${googleEngine.emoji} ${safeQuery}`);
         if (googleResults && googleResults.length > 0) {
           googleEmbed.setURL(engine[0].url);
           googleEmbed.setDescription(
@@ -245,8 +248,9 @@ module.exports = {
             ).join('\n\n')
           );
         } else {
-          googleEmbed.setDescription(`No results found\n[Search for ${query} on ${googleEngine.emoji} ${googleEngine.name}](${googleEngine.url})`);
+          googleEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${googleEngine.emoji} ${googleEngine.name}](${googleEngine.url})`);
         }
+        if (profanityDetected) googleEmbed.setFooter({ text: 'Results may be unsafe' });
         await interaction.editReply({ embeds: [googleEmbed] });
         return;
       } else if (deepsearch == 'duckduckgo') {
@@ -263,7 +267,7 @@ module.exports = {
           .setColor(duckduckgoEngine.color || 0xDE5833)
           .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
           .setTimestamp()
-          .setTitle(`${duckduckgoEngine.emoji} ${query}`);
+          .setTitle(`${duckduckgoEngine.emoji} ${safeQuery}`);
         if (duckduckgoResults && duckduckgoResults.length > 0) {
           duckduckgoEmbed.setURL(engine[1].url);
           duckduckgoEmbed.setDescription(
@@ -272,8 +276,9 @@ module.exports = {
             ).join('\n\n')
           );
         } else {
-          duckduckgoEmbed.setDescription(`No results found\n[Search for ${query} on ${duckduckgoEngine.emoji} ${duckduckgoEngine.name}](${duckduckgoEngine.url})`);
+          duckduckgoEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${duckduckgoEngine.emoji} ${duckduckgoEngine.name}](${duckduckgoEngine.url})`);
         }
+        if (profanityDetected) duckduckgoEmbed.setFooter({ text: 'Results may be unsafe' });
         await interaction.editReply({ embeds: [duckduckgoEmbed] });
         return;
       } else if (deepsearch == 'bing') {
@@ -290,7 +295,7 @@ module.exports = {
           .setColor(bingEngine.color || 0x00809D)
           .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
           .setTimestamp()
-          .setTitle(`${bingEngine.emoji} ${query}`);
+          .setTitle(`${bingEngine.emoji} ${safeQuery}`);
         if (bingResults && bingResults.length > 0) {
           bingEmbed.setURL(engine[2].url);
           bingEmbed.setDescription(
@@ -299,8 +304,9 @@ module.exports = {
             ).join('\n\n')
           );
         } else {
-          bingEmbed.setDescription(`No results found\n[Search for ${query} on ${bingEngine.emoji} ${bingEngine.name}](${bingEngine.url})`);
+          bingEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${bingEngine.emoji} ${bingEngine.name}](${bingEngine.url})`);
         }
+        if (profanityDetected) bingEmbed.setFooter({ text: 'Results may be unsafe' });
         await interaction.editReply({ embeds: [bingEmbed] });
         return;
       } else if (deepsearch == 'yandex') {
@@ -317,7 +323,7 @@ module.exports = {
           .setColor(yandexEngine.color || 0xFF0000)
           .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
           .setTimestamp()
-          .setTitle(`${yandexEngine.emoji} ${query}`);
+          .setTitle(`${yandexEngine.emoji} ${safeQuery}`);
         if (yandexResults && yandexResults.length > 0) {
           yandexEmbed.setURL(engine[3].url);
           yandexEmbed.setDescription(
@@ -326,8 +332,9 @@ module.exports = {
             ).join('\n\n')
           );
         } else {
-          yandexEmbed.setDescription(`No results found\n[Search for ${query} on ${yandexEngine.emoji} ${yandexEngine.name}](${yandexEngine.url})`);
+          yandexEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${yandexEngine.emoji} ${yandexEngine.name}](${yandexEngine.url})`);
         }
+        if (profanityDetected) yandexEmbed.setFooter({ text: 'Results may be unsafe' });
         await interaction.editReply({ embeds: [yandexEmbed] });
         return;
       } else if (deepsearch == 'yahoo') {
@@ -344,7 +351,7 @@ module.exports = {
           .setColor(yahooEngine.color || 0x720E9E)
           .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
           .setTimestamp()
-          .setTitle(`${yahooEngine.emoji} ${query}`);
+          .setTitle(`${yahooEngine.emoji} ${safeQuery}`);
         if (yahooResults && yahooResults.length > 0) {
           yahooEmbed.setURL(engine[4].url);
           yahooEmbed.setDescription(
@@ -353,8 +360,9 @@ module.exports = {
             ).join('\n\n')
           );
         } else {
-          yahooEmbed.setDescription(`No results found\n[Search for ${query} on ${yahooEngine.emoji} ${yahooEngine.name}](${yahooEngine.url})`);
+          yahooEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${yahooEngine.emoji} ${yahooEngine.name}](${yahooEngine.url})`);
         }
+        if (profanityDetected) yahooEmbed.setFooter({ text: 'Results may be unsafe' });
         await interaction.editReply({ embeds: [yahooEmbed] });
         return;
       }
@@ -375,8 +383,9 @@ module.exports = {
         .setColor(0x00FFFF)
         .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
         .setTimestamp()
-        .setDescription(`<:google:1266016555662184606> [${query}](https://google.com/search?q=${encodedQuery})\n<:duckduckgo:1266021571508572261> [${query}](https://duckduckgo.com/?q=${encodedQuery})\n<:bing:1266020917314850907> [${query}](https://bing.com/search?q=${encodedQuery})\n<:yandex:1266020634484539515> [${query}](https://yandex.com/search/?text=${encodedQuery})\n<:yahoo:1266019185100718155> [${query}](https://search.yahoo.com/search?p=${encodedQuery})\n<:brave:1266017410109149287> [${query}](https://search.brave.com/search?q=${encodedQuery})\n<:ecosia:1266017707766055045> [${query}](https://www.ecosia.org/search?q=${encodedQuery})\n<:qwant:1266021495981998172> [${query}](https://www.qwant.com/?q=${encodedQuery})\n<:swisscows:1266020983651958785> [${query}](https://swisscows.com/it/web?query=${encodedQuery})\n<:gibiru:1266020402749247581> [${query}](https://gibiru.com/results.html?q=${encodedQuery})\n<:lilo:1266019331301576754> [${query}](https://search.lilo.org/?q=${encodedQuery})`);
-      await interaction.editReply({ embeds: [regularSearchEmbed] });
+        .setDescription(`<:google:1266016555662184606> [${safeQuery}](https://google.com/search?q=${encodedQuery})\n<:duckduckgo:1266021571508572261> [${safeQuery}](https://duckduckgo.com/?q=${encodedQuery})\n<:bing:1266020917314850907> [${safeQuery}](https://bing.com/search?q=${encodedQuery})\n<:yandex:1266020634484539515> [${safeQuery}](https://yandex.com/search/?text=${encodedQuery})\n<:yahoo:1266019185100718155> [${safeQuery}](https://search.yahoo.com/search?p=${encodedQuery})\n<:brave:1266017410109149287> [${safeQuery}](https://search.brave.com/search?q=${encodedQuery})\n<:ecosia:1266017707766055045> [${safeQuery}](https://www.ecosia.org/search?q=${encodedQuery})\n<:qwant:1266021495981998172> [${safeQuery}](https://www.qwant.com/?q=${encodedQuery})\n<:swisscows:1266020983651958785> [${safeQuery}](https://swisscows.com/it/web?query=${encodedQuery})\n<:gibiru:1266020402749247581> [${safeQuery}](https://gibiru.com/results.html?q=${encodedQuery})\n<:lilo:1266019331301576754> [${safeQuery}](https://search.lilo.org/?q=${encodedQuery})`);
+        if (profanityDetected) regularSearchEmbed.setFooter({ text: 'Results may be unsafe' });
+        await interaction.editReply({ embeds: [regularSearchEmbed] });
       return;
     }
   }
