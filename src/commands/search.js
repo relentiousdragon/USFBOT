@@ -51,25 +51,28 @@ async function fetchDuckDuckGoResults(query) {
       params: { q: query, format: 'json', no_html: 1, no_redirect: 1, kp: 1, safe: 'active' }
     });
     const data = response.data;
+
+    const formatResult = (rt) => {
+      let urlPart = rt.FirstURL.split('/').pop().split('?')[0];
+      let title = urlPart.replace(/_/g, ' ');
+      return {
+        title: title,
+        link: rt.FirstURL,
+        description: rt.Text
+      };
+    };
+
     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
       return data.RelatedTopics
         .filter(rt => rt.FirstURL && rt.Text)
         .slice(0, 5)
-        .map(rt => ({
-          title: rt.Text,
-          link: rt.FirstURL,
-          snippet: rt.Text || ''
-        }));
+        .map(rt => formatResult(rt));
     }
     if (data.Results && data.Results.length > 0) {
       return data.Results
         .filter(result => result.FirstURL && result.Text)
         .slice(0, 5)
-        .map(result => ({
-          title: result.Text,
-          link: result.FirstURL,
-          snippet: result.Text || ''
-        }));
+        .map(result => formatResult(result));
     }
     return null;
   } catch (error) {
