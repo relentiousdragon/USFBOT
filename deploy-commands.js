@@ -275,14 +275,24 @@ const commands = [
     },
     {
         name: "mcstatus",
-        description: "Get the status of a Java, Bedrock or Education Edition Minecraft Server",
+        description: "Get the status of a Java or Bedrock Edition Minecraft Server",
         dm_permission: false,
         options: [
             {
                 name: "address",
-                description: "IP address of the Minecraft server (without port)",
+                description: "IP address of the Minecraft server",
                 type: 3,
                 required: true
+            },
+            {
+                name: "edition",
+                description: "Edition of the Minecraft server (default java)",
+                type: 3,
+                required: false,
+                choices: [
+                    { name: 'Java', type: 3, value: 'java' },
+                    { name: 'Bedrock', type: 3, value: 'bedrock' },
+                ]
             }
         ]
     },
