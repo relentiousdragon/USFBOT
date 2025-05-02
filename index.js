@@ -73,7 +73,7 @@ client.on(Events.InteractionCreate, async interaction => {
     } catch (error) {
         console.error(error);
         const { erbed } = require('./src/embeds/index-embeds.js')
-        erbed.setFooter(`${error}`)
+        erbed.setFooter({text: `${error}`})
         if (interaction.replied) {
             interaction.editReply({ embeds: [erbed], flags: MessageFlags.Ephemeral })
         } else {
