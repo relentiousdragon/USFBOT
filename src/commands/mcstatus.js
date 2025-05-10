@@ -56,7 +56,7 @@ module.exports = {
                 { name: 'Version', value: `${status.version}`, inline: true },
                 { name: 'Protocol', value: `${status.protocol}`, inline: true },
             )
-            .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({size:32})}`})
+            .setFooter({ text: `USF Bot`, iconURL: `${interaction.client.user.displayAvatarURL({size:32})}`})
             .setTimestamp();
         return interaction.editReply({ embeds: [statusEmbed] });
     },

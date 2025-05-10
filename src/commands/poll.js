@@ -34,7 +34,7 @@ module.exports = {
             	.setColor(0xff0000)
             	.setTitle(`${message}`)
             	.setThumbnail(`${interaction.guild.iconURL({size:2048})}`)
-            	.setFooter({text: `Requested by ${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({size:32})}`})
+            	.setFooter({text: `USF Bot`, iconURL: `${interaction.client.user.displayAvatarURL({size:32})}`})
             	.setTimestamp();
             let options;
             if (option10) {

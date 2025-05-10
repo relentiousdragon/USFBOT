@@ -240,7 +240,7 @@ module.exports = {
         }
         const googleEmbed = new EmbedBuilder()
           .setColor(googleEngine.color || 0x4285F4)
-          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
           .setTimestamp()
           .setTitle(`${googleEngine.emoji} ${safeQuery}`);
         if (googleResults && googleResults.length > 0) {
@@ -268,7 +268,7 @@ module.exports = {
         }
         const duckduckgoEmbed = new EmbedBuilder()
           .setColor(duckduckgoEngine.color || 0xDE5833)
-          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
           .setTimestamp()
           .setTitle(`${duckduckgoEngine.emoji} ${safeQuery}`);
         if (duckduckgoResults && duckduckgoResults.length > 0) {
@@ -296,7 +296,7 @@ module.exports = {
         }
         const bingEmbed = new EmbedBuilder()
           .setColor(bingEngine.color || 0x00809D)
-          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
           .setTimestamp()
           .setTitle(`${bingEngine.emoji} ${safeQuery}`);
         if (bingResults && bingResults.length > 0) {
@@ -324,7 +324,7 @@ module.exports = {
         }
         const yandexEmbed = new EmbedBuilder()
           .setColor(yandexEngine.color || 0xFF0000)
-          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
           .setTimestamp()
           .setTitle(`${yandexEngine.emoji} ${safeQuery}`);
         if (yandexResults && yandexResults.length > 0) {
@@ -352,7 +352,7 @@ module.exports = {
         }
         const yahooEmbed = new EmbedBuilder()
           .setColor(yahooEngine.color || 0x720E9E)
-          .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
           .setTimestamp()
           .setTitle(`${yahooEngine.emoji} ${safeQuery}`);
         if (yahooResults && yahooResults.length > 0) {
@@ -384,7 +384,7 @@ module.exports = {
       //
       const regularSearchEmbed = new EmbedBuilder()
         .setColor(0x00FFFF)
-        .setAuthor({ name: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+        .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
         .setTimestamp()
         .setDescription(`<:google:1266016555662184606> [${safeQuery}](https://google.com/search?q=${encodedQuery})\n<:duckduckgo:1266021571508572261> [${safeQuery}](https://duckduckgo.com/?q=${encodedQuery})\n<:bing:1266020917314850907> [${safeQuery}](https://bing.com/search?q=${encodedQuery})\n<:yandex:1266020634484539515> [${safeQuery}](https://yandex.com/search/?text=${encodedQuery})\n<:yahoo:1266019185100718155> [${safeQuery}](https://search.yahoo.com/search?p=${encodedQuery})\n<:brave:1266017410109149287> [${safeQuery}](https://search.brave.com/search?q=${encodedQuery})\n<:ecosia:1266017707766055045> [${safeQuery}](https://www.ecosia.org/search?q=${encodedQuery})\n<:qwant:1266021495981998172> [${safeQuery}](https://www.qwant.com/?q=${encodedQuery})\n<:swisscows:1266020983651958785> [${safeQuery}](https://swisscows.com/it/web?query=${encodedQuery})\n<:gibiru:1266020402749247581> [${safeQuery}](https://gibiru.com/results.html?q=${encodedQuery})\n<:lilo:1266019331301576754> [${safeQuery}](https://search.lilo.org/?q=${encodedQuery})`);
         if (profanityDetected) regularSearchEmbed.setFooter({ text: 'Results may be unsafe' });

@@ -98,7 +98,7 @@ module.exports = {
           .setDescription('🔴 Offline\n-# Please note that this may be wrong. The pinged IP address may blocks requests from some addresses')
           .setColor(0xFF0000)
           .setTimestamp()
-          .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ size: 2048 }) });
+          .setFooter({ text: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL({ size: 2048 }) });
         const offlineFields = [];
         offlineFields.push({ name: 'Port', value: port.toString(), inline: true });
         if (!isValidIPAddress(input) && resolvedIP) {
@@ -139,7 +139,7 @@ module.exports = {
           .setColor(0x1d4ed8)
           .addFields(...fields)
           .setTimestamp()
-          .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ size: 2048 }) });
+          .setFooter({ text: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL({ size: 2048 }) });
         
         return await interaction.editReply({ embeds: [pingEmbed] });
       });
