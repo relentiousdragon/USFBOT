@@ -18,7 +18,7 @@ We make use of some third party services who may collect some data.
 - [Discord Terms of Service](https://discord.com/terms)
 - [Discord Privacy Policy](https://discord.com/privacy)
 
-## 5. Discuss about this Privacy Polocy
+## 5. Discuss about this Privacy Policy
 You can send a mail to dxsteam.contact@gmail.com or ask in our Discord Server (https://discord.dxsteam.me/) through a Discord Bot Support Ticket.
 
 ## 6. Changes in this Privacy Policy
