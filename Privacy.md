@@ -1,24 +1,25 @@
 # Privacy Policy
-DISCLAIMER: We do not knowingly collect data of children under 16. Under article 8 of the GDPR, you are required to have your guardian(s) consent for you before using our products and services if you are under 16.
+**DISCLAIMER:** We do not knowingly collect data of children under 16. Under article 8 of the GDPR, you are required to have your guardian(s) consent for you before using our products and services if you are under 16.
 
-## What data do we gather?
-- Join and Leave logs for servers who invite the bot in
-- Reports and suggestions sent to us
+## 1. Information we collect
+- Join and Leave logs for servers who invite the bot in - to make sure that the bot is not used for other scopes which are against the Discord ToS, Community Guidelines or even applicable law and to allow our users to send us suggestions and reports regarding the bot.
+- Reports and suggestions sent to us - to allow our users to send us suggestions and reports regarding bot or users.
 
-## Why do we need this data?
-We need this data to make sure that the USF Bot is not used for other scopes which are against the Discord ToS, Community guidelines or even law and to allow our users to send us suggestions and reports regarding the bot.
-
-## How can I request to get my data deleted?
+## 2. Data Deletion
 - You can request to delete your server joinlogs if the bot left your discord server....
-- You can request to delete reports and suggestions sent to us...
+- You can request to delete reports and suggestions sent to us sent by your discord account...
+...by mailing us to dxsteam.contact@gmail.com.
 
-...through a support Ticket in our Discord Server or mailing us to dxsteam.contact@gmail.com.
+## 3. Data Access
+- Access to this data is granted only to members of our team and developers who work on the bot.
 
-## Who do we share your data with?
-Only the DXS Team and Developers have access to this data and they are not allowed to send it in any place external to private channels dedicated to development
+## 4. Thirdy parties
+We make use of some third party services who may collect some data. 
+- [Discord Terms of Service](https://discord.com/terms)
+- [Discord Privacy Policy](https://discord.com/privacy)
 
-## Where can we discuss about this Privacy Policy?
-You can send a mail to usfdiscordteam@gmail.com or ask in our Discord Server (https://discord.dxsteam.me/) through a support ticket.
+## 5. Discuss about this Privacy Polocy
+You can send a mail to dxsteam.contact@gmail.com or ask in our Discord Server (https://discord.dxsteam.me/) through a Discord Bot Support Ticket.
 
-## Changes in the privacy Policy
+## 6. Changes in this Privacy Policy
 It is your responsibility to always stay informed of the latest Privacy Policy. Even if you haven't read it beforehand, you may still be subject to punishment.
