@@ -1,395 +1,818 @@
-const { ActionRowBuilder, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { MessageFlags, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events, ContainerBuilder, SectionBuilder, TextDisplayBuilder, ThumbnailBuilder, SeparatorBuilder, SeparatorSpacingSize, MediaGalleryBuilder, MediaGalleryItemBuilder, ConnectionService } = require('discord.js');
 const axios = require('axios');
 const { GOOGLE_API_KEY, GOOGLE_CSE_ID, SERPAPI_KEY } = require('../../config.json');
-const SerpApi = require('google-search-results-nodejs');
-const search = new SerpApi.GoogleSearch(SERPAPI_KEY);
-//
+const { getJson } = require('serpapi');
+
+async function getLogoUrl(domain) {
+  return `https://logo.clearbit.com/${domain}`;
+}
+
+async function isImageUrl(url, timeout = 2000) {
+  if (!url) return false;
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname.toLowerCase();
+    if (imageExtensions.some(ext => pathname.endsWith(ext))) return true;
+  } catch {}
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const response = await fetch(url, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
+    clearTimeout(timeoutId);
+    let contentType = response.headers.get('content-type');
+    if (!contentType) return imageExtensions.some(ext => url.toLowerCase().includes(ext));
+    return contentType.startsWith('image/');
+  } catch {
+    return imageExtensions.some(ext => url.toLowerCase().includes(ext));
+  }
+}
+const PAGINATION_CACHE = new Map(); 
+const PAGINATION_TTL = 10 * 60 * 1000;
+
+function makeSessionId(engine, query, userId) {
+  return `${engine}_${Buffer.from(query).toString('base64')}_${userId}`;
+}
+
+function setPaginationCache(sessionId, results, meta) {
+  PAGINATION_CACHE.set(sessionId, { timestamp: Date.now(), results, meta });
+}
+
+function getPaginationCache(sessionId) {
+  const entry = PAGINATION_CACHE.get(sessionId);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > PAGINATION_TTL) {
+    PAGINATION_CACHE.delete(sessionId);
+    return null;
+  }
+  return entry;
+}
+
+function cleanupPaginationCache() {
+  const now = Date.now();
+  for (const [key, entry] of PAGINATION_CACHE.entries()) {
+    if (now - entry.timestamp > PAGINATION_TTL) {
+      PAGINATION_CACHE.delete(key);
+    }
+  }
+}
+setInterval(cleanupPaginationCache, 60 * 1000); 
+
+function isPaginationExpired(sessionId) {
+  const entry = PAGINATION_CACHE.get(sessionId);
+  if (!entry) return true;
+  return Date.now() - entry.timestamp > PAGINATION_TTL;
+}
+
+function parseDuckDuckGoResults(data, query) {
+  let results = [];
+  if (data.Abstract && data.AbstractURL) {
+    results.push({
+      title: data.Heading || query,
+      description: data.Abstract,
+      url: data.AbstractURL,
+      infobox: data.Infobox || null,
+      image: data.Image || null,
+      ImageWidth: data.ImageWidth || null,
+      ImageHeight: data.ImageHeight || null,
+      isAbstract: true
+    });
+  }
+  if (data.Results && data.Results.length > 0) {
+    results = results.concat(
+      data.Results.filter(r => r.Text && r.FirstURL).map(r => ({
+        title: r.Text.split(" - ")[0],
+        description: r.Text,
+        url: r.FirstURL
+      }))
+    );
+  }
+  if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+    data.RelatedTopics.forEach(item => {
+      if (item.Text && item.FirstURL) {
+        results.push({
+          title: item.Text.split(" - ")[0],
+          description: item.Text,
+          url: item.FirstURL,
+          isRelated: true
+        });
+      } else if (item.Topics && Array.isArray(item.Topics)) {
+        item.Topics.forEach(subItem => {
+          if (subItem.Text && subItem.FirstURL) {
+            results.push({
+              title: subItem.Text.split(" - ")[0],
+              description: subItem.Text,
+              url: subItem.FirstURL,
+              isRelated: true
+            });
+          }
+        });
+      }
+    });
+  }
+  return results;
+}
+
+function cleanInfoboxFields(fields) {
+  const allowed = [
+    'Born', 'Age', 'Other names', 'Education', 'Alma mater', 'Occupation', 'Years active', 'Partner(s)',
+    'Twitter profile', 'Instagram profile', 'Facebook profile', 'IMDb ID', 'Wikidata description', 'Known for', 'Awards', 'Net worth'
+  ];
+  const socialMap = {
+    'Twitter profile': v => `[Twitter](https://x.com/${v})`,
+    'Instagram profile': v => `[Instagram](https://instagram.com/${v})`,
+    'Facebook profile': v => `[Facebook](https://facebook.com/${v})`,
+    'IMDb ID': v => {
+      if (/^nm\d{7,8}$/.test(v)) return `[IMDb](https://www.imdb.com/name/${v}/)`;
+      if (/^tt\d{7,8}$/.test(v)) return `[IMDb](https://www.imdb.com/title/${v}/)`;
+      return `[IMDb](https://www.imdb.com/${v}/)`;
+    }
+  };
+  return fields
+    .filter(f => allowed.includes(f.label) && f.value && typeof f.value === 'string' && !f.value.startsWith('[object'))
+    .map(f => {
+      if (socialMap[f.label]) {
+        return { name: f.label, value: socialMap[f.label](f.value), inline: true };
+      }
+      return { name: f.label, value: String(f.value).slice(0, 1024), inline: true };
+    });
+}
+// STASHED
+function isValidImdbId(id) {
+  return /^tt\d{7,8}$/.test(id) || /^nm\d{7,8}$/.test(id);
+}
+
+async function fetchImdbRating(imdbId) {
+  const OMDB_API_KEY = `f1e79fce`;
+  if (!OMDB_API_KEY) return null;
+  try {
+    const url = `https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_API_KEY}`;
+    const res = await axios.get(url);
+    if (res.data && res.data.Response === 'True' && res.data.Title) {
+      return {
+        rating: res.data.imdbRating && res.data.imdbRating !== 'N/A' ? res.data.imdbRating + '/10' : null,
+        title: res.data.Title,
+        type: res.data.Type,
+        year: res.data.Year,
+        genre: res.data.Genre,
+        writer: res.data.Writer,
+        rated: res.data.Rated,
+        language: res.data.Language,
+        totalSeasons: res.data.totalSeasons,
+        metascore: res.data.Metascore,
+        imdbVotes: res.data.imdbVotes,
+        ratings: res.data.Ratings
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function buildDuckDuckGoComponent(result, page, totalPages, bot, query, sessionId) {
+  let domain, logoUrl;
+  try {
+    domain = new URL(result.url).hostname;
+    logoUrl = await getLogoUrl(domain);
+  } catch {
+    domain = 'duckduckgo.com';
+    logoUrl = 'https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/duckduckgo-icon.png';
+  }
+
+  function getShortTitle(title) {
+    if (!title) return '';
+    let t = title.split(' - ')[0].split(':')[0];
+    if (t.length > 80) t = t.slice(0, 80) + '...';
+    return t.trim();
+  }
+
+  if (result.isRelated && !result.isAbstract) {
+    const ddgPrevId = `search_ddg_prev_${query}_${page - 1}_${sessionId}`;
+    const ddgNextId = `search_ddg_next_${query}_${page + 1}_${sessionId}`;
+    const expired = isPaginationExpired(sessionId);
+
+    const textDisplays = [
+      new TextDisplayBuilder().setContent(`# Related Topics`),
+      result.title ? new TextDisplayBuilder().setContent(result.title) : undefined
+    ].filter(Boolean);
+    const section = new SectionBuilder()
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(logoUrl))
+      .addTextDisplayComponents(...textDisplays);
+    const actionRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Prev')
+        .setCustomId(ddgPrevId)
+        .setDisabled(page === 1 || expired),
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Next')
+        .setCustomId(ddgNextId)
+        .setDisabled(page === totalPages || expired),
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('Visit')
+        .setURL(result.url || 'https://duckduckgo.com')
+    );
+    const container = new ContainerBuilder()
+      .setAccentColor(0x18B035)
+      .addSectionComponents(section)
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`-# USF Bot - Page ${page} of ${totalPages}`)
+      )
+      .addActionRowComponents(actionRow);
+    return container;
+  }
+
+  if (result.isAbstract && page === 1) {
+    const ddgPrevId = `search_ddg_prev_${query}_${page - 1}_${sessionId}`;
+    const ddgNextId = `search_ddg_next_${query}_${page + 1}_${sessionId}`;
+    const expired = isPaginationExpired(sessionId);
+
+    let width = result.ImageWidth, height = result.ImageHeight;
+    let useThumbnail = false;
+    if (result.image && result.image !== "") {
+      if (typeof width !== 'number' || typeof height !== 'number') {
+        width = null; height = null;
+      }
+      if (width && height && width <= height) {
+        useThumbnail = true;
+      } else if (width && height && width > height && width / height > 1.1) {
+        useThumbnail = false;
+      } else if (width && height && width === height) {
+        useThumbnail = true;
+      }
+    }
+    let markdown2 = `# ${result.title || query}\n`;
+    if (result.url) markdown2 += `-# 🔗 [${domain}](${result.url})\n`;
+    let markdown = '';
+    let imdbId = null;
+    let imdbRating = null;
+    let imdbType = null;
+    if (result.infobox && page === 1) {
+      const infoboxContent = result.infobox.content || [];
+      const embedFields = cleanInfoboxFields(infoboxContent);
+      let wikidataDesc = null;
+      for (const f of embedFields) {
+        if (f.name === 'Wikidata description') {
+          wikidataDesc = f.value;
+          continue;
+        }
+        if (f.name === 'IMDb ID') {
+          let rawImdbId = f.value;
+          const match = /imdb\.com\/(title|name)\/(tt\d{7,8}|nm\d{7,8})/i.exec(f.value);
+          if (match) rawImdbId = match[2];
+          imdbId = rawImdbId;
+          imdbType = (infoboxContent.find(x => x.label === 'Occupation') || {}).value || '';
+          const imdbData = await fetchImdbRating(imdbId);
+          if (imdbData && imdbData.title) {
+            let imdbLink = /^tt\d{7,8}$/.test(imdbId)
+              ? `https://www.imdb.com/title/${imdbId}/`
+              : /^nm\d{7,8}$/.test(imdbId)
+                ? `https://www.imdb.com/name/${imdbId}/`
+                : `https://www.imdb.com/${imdbId}/`;
+            let imdbLine = `**IMDb:** [IMDb](${imdbLink})`;
+            if (imdbData.rating) imdbLine += ` (${imdbData.rating})`;
+            markdown += imdbLine + '\n';
+            if (["movie","series","episode"].includes(imdbData.type)) {
+              const fields = [
+                imdbData.year ? `**Year:** ${imdbData.year}` : null,
+                imdbData.genre ? `**Genre:** ${imdbData.genre}` : null,
+                imdbData.writer ? `**Writer:** ${imdbData.writer}` : null,
+                imdbData.rated ? `**Rated:** ${imdbData.rated}` : null,
+                imdbData.language ? `**Language:** ${imdbData.language}` : null,
+                imdbData.totalSeasons ? `**Total Seasons:** ${imdbData.totalSeasons}` : null,
+                imdbData.metascore && imdbData.metascore !== 'N/A' ? `**Metascore:** ${imdbData.metascore}` : null,
+                imdbData.imdbVotes ? `**IMDb Votes:** ${imdbData.imdbVotes}` : null
+              ].filter(Boolean);
+              const bigFields = [];
+              const smallFields = [];
+              fields.forEach(f => {
+                if (f.startsWith('**Writer:**') || f.startsWith('**Genre:**') || f.startsWith('**Language:**')) {
+                  bigFields.push(f);
+                } else {
+                  smallFields.push(f);
+                }
+              });
+              for (let i = 0; i < bigFields.length; i += 2) {
+                markdown += bigFields.slice(i, i + 2).join(' | ') + '\n';
+              }
+              for (let i = 0; i < smallFields.length; i += 3) {
+                markdown += smallFields.slice(i, i + 3).join(' | ') + '\n';
+              }
+              if (imdbData.ratings && Array.isArray(imdbData.ratings)) {
+                imdbData.ratings.forEach(r => {
+                  if (r.Source && r.Value) markdown += `**${r.Source}:** ${r.Value}\n`;
+                });
+              }
+            }
+          }
+          continue;
+        }
+        markdown += `**${f.name}:** ${f.value}\n`;
+      }
+      if (wikidataDesc) {
+        markdown += `\n-# ${wikidataDesc}\n`;
+      }
+    }
+    if (result.description) markdown += `\n${result.description.slice(0, 2000)}\n`;
+
+    let faviconDomain = result.OfficialDomain || null;
+    if (!faviconDomain && result.infobox && Array.isArray(result.infobox.content)) {
+      const officialWebsiteField = result.infobox.content.find(f => f.label === 'Official Website' && typeof f.value === 'string');
+      if (officialWebsiteField) {
+        try {
+          faviconDomain = new URL(officialWebsiteField.value).hostname;
+        } catch {}
+      }
+    }
+    let faviconUrl = null;
+    let validFavicon = false;
+    if (faviconDomain) {
+      try {
+        faviconUrl = await getLogoUrl(faviconDomain);
+        validFavicon = await isImageUrl(faviconUrl);
+      } catch {}
+    }
+    const wikiLogo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/100px-Wikipedia-logo-v2.svg.png';
+    const thumbnailUrl = validFavicon ? faviconUrl : wikiLogo;
+
+    const section = new SectionBuilder()
+      .setThumbnailAccessory(
+        useThumbnail && result.image
+          ? new ThumbnailBuilder().setURL(result.image.startsWith('http') ? result.image : `https://duckduckgo.com${result.image}`)
+          : new ThumbnailBuilder().setURL(thumbnailUrl)
+      )
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(markdown2));
+    let mediaGallery = null;
+    if (!useThumbnail && result.image && result.image !== "") {
+      let width = result.ImageWidth, height = result.ImageHeight;
+      if (typeof width !== 'number' || typeof height !== 'number') {
+        width = null; height = null;
+      }
+      if (width && height && width > height && width / height > 1.1) {
+        const imageUrl = result.image.startsWith('http') ? result.image : `https://duckduckgo.com${result.image}`;
+        mediaGallery = new MediaGalleryBuilder().addItems(
+          new MediaGalleryItemBuilder().setURL(imageUrl)
+        );
+      }
+    }
+    const actionRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Prev')
+        .setCustomId(ddgPrevId)
+        .setDisabled(page === 1 || expired),
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Next')
+        .setCustomId(ddgNextId)
+        .setDisabled(page === totalPages || expired),
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel(`${result.url ? `Read More` : `Visit`}`)
+        .setURL(result.url || 'https://duckduckgo.com')
+    );
+    const container = new ContainerBuilder()
+      .setAccentColor(0x18B035)
+      .addSectionComponents(section)
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+      )
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(markdown));
+    if (mediaGallery) container.addMediaGalleryComponents(mediaGallery);
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    );
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`-# USF Bot - Page ${page} of ${totalPages}`)
+    );
+    container.addActionRowComponents(actionRow);
+    return container;
+  }
+
+  if (!result.isAbstract && !result.infobox) {
+    const ddgPrevId = `search_ddg_prev_${query}_${page - 1}_${sessionId}`;
+    const ddgNextId = `search_ddg_next_${query}_${page + 1}_${sessionId}`;
+    const expired = isPaginationExpired(sessionId);
+
+    let shortTitle = getShortTitle(result.title);
+    let content = '';
+    content = result.description || result.title;
+    if (shortTitle == result.title) {
+      shortTitle = `${query}`;
+    }
+    const textDisplays = [
+      new TextDisplayBuilder().setContent(`# ${shortTitle}`),
+      content ? new TextDisplayBuilder().setContent(content) : undefined
+    ].filter(Boolean);
+    const section = new SectionBuilder()
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(logoUrl))
+      .addTextDisplayComponents(...textDisplays);
+    const actionRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Prev')
+        .setCustomId(ddgPrevId)
+        .setDisabled(page === 1 || expired),
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel('Next')
+        .setCustomId(ddgNextId)
+        .setDisabled(page === totalPages || expired),
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('Visit')
+        .setURL(result.url || 'https://duckduckgo.com')
+    );
+    const container = new ContainerBuilder()
+      .setAccentColor(0x18B035)
+      .addSectionComponents(section)
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`-# USF Bot - Page ${page} of ${totalPages}`)
+      )
+      .addActionRowComponents(actionRow);
+    return container;
+  }
+}
+
+async function buildSerpApiComponent(res, page, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sessionId) {
+  const serpPrevId = `search_${engineName}_prev_${query}_${page - 1}_${sessionId}`;
+  const serpNextId = `search_${engineName}_next_${query}_${page + 1}_${sessionId}`;
+  const expired = isPaginationExpired(sessionId);
+
+  let thumbnailUrl = logoUrl;
+  if (res.pagemap) {
+    if (res.pagemap.cse_image && Array.isArray(res.pagemap.cse_image) && res.pagemap.cse_image[0]?.src) {
+      thumbnailUrl = res.pagemap.cse_image[0].src;
+    } else if (res.pagemap.cse_thumbnail && Array.isArray(res.pagemap.cse_thumbnail) && res.pagemap.cse_thumbnail[0]?.src) {
+      thumbnailUrl = res.pagemap.cse_thumbnail[0].src;
+    } else if (res.pagemap.imageobject && Array.isArray(res.pagemap.imageobject) && res.pagemap.imageobject[0]?.url) {
+      thumbnailUrl = res.pagemap.imageobject[0].url;
+    }
+  }
+  const hasImage = thumbnailUrl && thumbnailUrl !== logoUrl;
+  let extraInfo = '';
+  if (res.pagemap) {
+    if (res.pagemap.hcard && Array.isArray(res.pagemap.hcard) && res.pagemap.hcard[0]) {
+      const h = res.pagemap.hcard[0];
+      if (h.bday) extraInfo += `-# **Birthday:** ${h.bday}\n`;
+      if (h.url_text) extraInfo += `-# **Website:** [${h.url_text}](https://${h.url_text.replace(/^(https?:\/\/)?/, '')})\n`;
+    }
+    if (res.pagemap.person && Array.isArray(res.pagemap.person) && res.pagemap.person[0]) {
+      const p = res.pagemap.person[0];
+      if (p.name) extraInfo += `-# **Person:** ${p.name}\n`;
+      if (p.role) extraInfo += `-# **Role:** ${p.role}\n`;
+    }
+    if (res.pagemap.thing && Array.isArray(res.pagemap.thing) && res.pagemap.thing[0]) {
+      const t = res.pagemap.thing[0];
+      if (t.name) extraInfo += `-# **Thing:** ${t.name}\n`;
+    }
+    if (res.pagemap.hcard && Array.isArray(res.pagemap.hcard)) {
+      for (const h of res.pagemap.hcard) {
+        if (h.url && h.url.includes('twitter.com')) extraInfo += `-# [Twitter](${h.url}) `;
+        if (h.url && h.url.includes('instagram.com')) extraInfo += `-# [Instagram](${h.url}) `;
+        if (h.url && h.url.includes('facebook.com')) extraInfo += `-# [Facebook](${h.url}) `;
+      }
+    }
+  }
+  if (extraInfo) extraInfo = `\n${extraInfo.trim()}\n`;
+
+  let markdown2 = `# ${emoji} ${res.title || query}\n`;
+  markdown2 += `-# 🔗 [${domain}](${res.link})\n`;
+  let markdown = '';
+  if (extraInfo) markdown += `\n${extraInfo}`;
+  markdown += `\n${res.snippet ? res.snippet.slice(0, 2000) : ''}`;
+
+  const section = new SectionBuilder()
+    .setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(markdown2));
+
+  const actionRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Secondary)
+      .setLabel('Prev')
+      .setCustomId(serpPrevId)
+      .setDisabled(page === 1 || expired),
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Secondary)
+      .setLabel('Next')
+      .setCustomId(serpNextId)
+      .setDisabled(page === totalPages || expired),
+    ...(hasImage ? [
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('Visit')
+        .setURL(res.link)
+    ] : [])
+  );
+
+  const container = new ContainerBuilder()
+    .setAccentColor(color)
+    .addSectionComponents(section)
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Large).setDivider(true)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${markdown}`)
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`-# USF Bot - Page ${page} of ${totalPages}`)
+    )
+    .addActionRowComponents(actionRow);
+
+  if (!hasImage) {
+    section.setButtonAccessory(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('Visit')
+        .setURL(res.link)
+    );
+  }
+
+  return container;
+}
+
 async function filterQuery(query) {
   try {
-    const response = await axios.get(`https://www.purgomalum.com/service/json`, {
+    const response = await axios.get('https://www.purgomalum.com/service/json', {
       params: { text: query, fill_char: '-' }
     });
     return response.data.result || '[REDACTED]';
-  } catch (error) {
-    console.error('Purgomalum API error:', error);
+  } catch {
     return '[REDACTED]';
   }
 }
-async function fetchGoogleResults(query) {
-  const apiKey = GOOGLE_API_KEY;
-  const cx = GOOGLE_CSE_ID;
-  if (!apiKey || !cx) {
-    console.error('Google API Key or CSE ID is missing.');
-    return null;
-  }
-  try {
-    const response = await axios.get(`https://www.googleapis.com/customsearch/v1`, {
-      params: { key: apiKey, cx: cx, q: query, num: 5, safe: 'active' }
-    });
-    if (response.data.error) {
-      console.error('Google API Error:', response.data.error.message);
-      return null;
-    }
-    if (!response.data.items || response.data.items.length === 0) {
-      console.log('No results found for query:', query);
-      return null;
-    }
-    return response.data.items.slice(0, 5).map(item => ({
-      title: item.title,
-      link: item.link,
-      snippet: item.snippet
-    }));
-  } catch (error) {
-    console.error('Google API Request Failed:', error.message);
-    return null;
-  }
-}
-//
-async function fetchDuckDuckGoResults(query) {
-  try {
-    const response = await axios.get(`https://api.duckduckgo.com/`, {
-      params: { q: query, format: 'json', no_html: 1, no_redirect: 1, kp: 1, safe: 'active' }
-    });
+
+async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected = false, isPagination = false) {
+  const userId = interaction.user.id;
+  const sessionId = makeSessionId('ddg', query, userId);
+  let results, totalPages;
+  if (!isPagination) {
+    await interaction.deferReply();
+    const apiUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&no_redirect=1&kp=1&safe=active`;
+    const response = await axios.get(apiUrl);
     const data = response.data;
-
-    const formatResult = (rt) => {
-      let urlPart = rt.FirstURL.split('/').pop().split('?')[0];
-      let title = urlPart.replace(/_/g, ' ');
-      return {
-        title: title,
-        link: rt.FirstURL,
-        description: rt.Text
-      };
-    };
-
-    if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-      return data.RelatedTopics
-        .filter(rt => rt.FirstURL && rt.Text)
-        .slice(0, 5)
-        .map(rt => formatResult(rt));
+    results = parseDuckDuckGoResults(data, query).slice(0, 30);
+    if (profanityDetected && results.length && results[0].isAbstract) {
+      results = results.slice(1);
     }
-    if (data.Results && data.Results.length > 0) {
-      return data.Results
-        .filter(result => result.FirstURL && result.Text)
-        .slice(0, 5)
-        .map(result => formatResult(result));
+    if (!results.length) {
+      return interaction.editReply({ content: '<:search:1371166233788940460> No results found.' });
     }
-    return null;
-  } catch (error) {
-    console.error('DuckDuckGo API Error:', error.message);
-    return null;
+    totalPages = results.length;
+    setPaginationCache(sessionId, results, { query, totalPages });
+  } else {
+    const cache = getPaginationCache(sessionId);
+    if (!cache) {
+      await interaction.reply({ content: '❌ This search session has expired. Please run the command again.', ephemeral: true });
+      return;
+    }
+    results = cache.results;
+    totalPages = cache.meta.totalPages;
+    await interaction.deferUpdate();
+  }
+  const currentPage = Math.max(1, Math.min(page, totalPages));
+  const component = await buildDuckDuckGoComponent(results[currentPage - 1], currentPage, totalPages, interaction.client, query, sessionId);
+  await interaction.editReply({ components: [component], flags: MessageFlags.IsComponentsV2 });
+}
+
+async function handleAllLinks(interaction, query, realQuery) {
+  const encodedQuery = encodeURIComponent(query);
+  const encodedRealQuery = encodeURIComponent(realQuery || query);
+  const links = [
+    { name: 'Google', url: `https://google.com/search?q=${encodedRealQuery}&safe=active`, emoji: '<:google:1266016555662184606>' },
+    { name: 'DuckDuckGo', url: `https://duckduckgo.com/?q=${encodedRealQuery}&kp=1`, emoji: '<:duckduckgo:1266021571508572261>' },
+    { name: 'Bing', url: `https://bing.com/search?q=${encodedRealQuery}&adlt=strict`, emoji: '<:bing:1266020917314850907>' },
+    { name: 'Yandex', url: `https://yandex.com/search/?text=${encodedQuery}&family=1`, emoji: '<:yandex:1266020634484539515>' },
+    { name: 'Yahoo', url: `https://search.yahoo.com/search?p=${encodedQuery}`, emoji: '<:yahoo:1266019185100718155>' },
+    { name: 'Brave', url: `https://search.brave.com/search?q=${encodedQuery}&safesearch=strict`, emoji: '<:brave:1266017410109149287>' },
+    { name: 'Ecosia', url: `https://www.ecosia.org/search?q=${encodedQuery}&safesearch=1`, emoji: '<:ecosia:1266017707766055045>' },
+    { name: 'Qwant', url: `https://www.qwant.com/?q=${encodedQuery}&safesearch=1`, emoji: '<:qwant:1266021495981998172>' },
+    { name: 'Swisscows', url: `https://swisscows.com/it/web?query=${encodedQuery}&safesearch=true`, emoji: '<:swisscows:1266020983651958785>' },
+    { name: 'Gibiru', url: `https://gibiru.com/results.html?q=${encodedQuery}`, emoji: '<:gibiru:1266020402749247581>' },
+    { name: 'Lilo', url: `https://search.lilo.org/?q=${encodedQuery}&safe=active`, emoji: '<:lilo:1266019331301576754>' }
+  ];
+  const embed = new ContainerBuilder()
+    .setAccentColor(0x00FFFF)
+    .addSectionComponents(
+      new SectionBuilder()
+        .setThumbnailAccessory(
+          new ThumbnailBuilder()
+            .setURL(interaction.client.user.displayAvatarURL({ size: 2048 }))
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent("# Search Queries:"),
+          new TextDisplayBuilder().setContent(links.map(l => `${l.emoji} [${query}](${l.url})`).join('\n'))
+        )
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('-# USF Bot')
+    );
+  await interaction.reply({ components: [embed], flags: MessageFlags.IsComponentsV2 });
+}
+
+async function handleSerpApiEngine(interaction, query, engineName, color, emoji, page = 1, safeQuery = null, profanityDetected = false, isPagination = false) {
+  const userId = interaction.user.id;
+  const sessionId = makeSessionId(engineName, query, userId);
+  let items, totalPages;
+  if (!safeQuery) safeQuery = query;
+  if (!isPagination) {
+    await interaction.deferReply({ ephemeral: false });
+    if (engineName === 'google') {
+      try {
+        const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&safe=active&num=10`;
+        const response = await axios.get(apiUrl);
+        items = (response.data.items || []).slice(0, 30);
+        if (!items.length) {
+          await interaction.editReply({ content: `<:search:1371166233788940460> No results found.` });
+          return;
+        }
+        totalPages = items.length;
+        setPaginationCache(sessionId, items, { query, totalPages });
+      } catch (error) {
+        let errMsg = error?.response?.data?.error?.message || error?.message || String(error);
+        if (errMsg.includes('API key') || errMsg.includes('invalid') || errMsg.includes('quota')) {
+          await interaction.editReply({ content: '❌ Google Search is currently unavailable. Please try another engine.' });
+          return;
+        }
+        await interaction.editReply({ content: '❌ An error occurred while searching Google.' });
+        return;
+      }
+    } else {
+      if (!query || typeof query !== 'string' || !query.trim()) {
+        await interaction.editReply({ content: '❌ No query provided.' });
+        return;
+      }
+      try {
+        let params;
+        if (engineName === 'google') {
+          params = { engine: engineName, q: query, num: 30, safe: 'active', api_key: process.env.SERPAPI_KEY || SERPAPI_KEY };
+        } else if (engineName === 'bing') {
+          params = { engine: engineName, q: query, num: 30, safeSearch: 'strict', api_key: process.env.SERPAPI_KEY || SERPAPI_KEY };
+        } else if (engineName === 'yahoo') {
+          params = { engine: engineName, p: query, num: 30, vm: 'r', api_key: process.env.SERPAPI_KEY || SERPAPI_KEY };
+        } else if (engineName === 'yandex') { //DISABLED!!!!
+          params = { engine: engineName, text: query, num: 30, safe: 'active', api_key: process.env.SERPAPI_KEY || SERPAPI_KEY };
+        } else {
+          params = { engine: engineName, text: query, num: 30, safe: 'active', api_key: process.env.SERPAPI_KEY || SERPAPI_KEY };
+        }
+        let serpApiError = null;
+        await new Promise((resolve) => {
+          getJson(params, async (result, err) => {
+            if (err || (result && result.error && typeof result.error === 'string' && result.error.match(/api key|invalid|quota|unavailable|forbidden|denied|Missing query/i))) {
+              serpApiError = result && result.error ? result.error : (err && err.message ? err.message : 'Unknown error');
+              return resolve();
+            }
+            items = (result && result.organic_results && Array.isArray(result.organic_results)) ? result.organic_results.slice(0, 30) : [];
+            if (!items.length) {
+              await interaction.editReply({ content: `<:search:1371166233788940460> No results found.` });
+              return resolve();
+            }
+            totalPages = items.length;
+            setPaginationCache(sessionId, items, { query, totalPages });
+            resolve();
+          });
+        });
+        if (serpApiError) {
+          await interaction.editReply({ content: `❌ ${engineName.charAt(0).toUpperCase() + engineName.slice(1)} Search is currently unavailable. ${serpApiError}` });
+          return;
+        }
+      } catch (err) {
+        await interaction.editReply({ content: `❌ ${engineName.charAt(0).toUpperCase() + engineName.slice(1)} Search is currently unavailable. Please try another engine.` });
+        return;
+      }
+    }
+  } else {
+    const cache = getPaginationCache(sessionId);
+    if (!cache) {
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      return;
+    }
+    items = cache.results;
+    totalPages = cache.meta.totalPages;
+    await interaction.deferUpdate();
+  }
+  const currentPage = Math.max(1, Math.min(page, totalPages));
+  let res, domain, logoUrl;
+  if (engineName === 'google') {
+    res = items[currentPage - 1];
+    try {
+      domain = new URL(res.link).hostname;
+      logoUrl = await getLogoUrl(domain);
+    } catch {
+      domain = 'google.com';
+      logoUrl = '';
+    }
+    const component = await buildSerpApiComponent(res, currentPage, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sessionId);
+    await interaction.editReply({ components: [component], flags: MessageFlags.IsComponentsV2 });
+    return;
+  } else {
+    res = items[currentPage - 1];
+    try {
+      domain = new URL(res.link).hostname;
+      logoUrl = await getLogoUrl(domain);
+    } catch {
+      domain = engineName + '.com';
+      logoUrl = null;
+    }
+    if (!logoUrl) logoUrl = '';
+    const component = await buildSerpApiComponent(res, currentPage, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sessionId);
+    await interaction.editReply({ components: [component], flags: MessageFlags.IsComponentsV2 });
+    return;
   }
 }
-//
-async function fetchBingResults(query) {
-  return new Promise((resolve, reject) => {
-    search.json({
-      engine: 'bing',
-      q: query,
-      count: 5,
-      safe: 'active'
-    }, (result) => {
-      if (result?.error) {
-        return reject(new Error(result.error));
-      }
-      if (result?.organic_results) {
-        resolve(result.organic_results.slice(0, 5).map(item => ({
-          title: item.title,
-          link: item.link,
-          snippet: item.snippet
-        })));
-      } else {
-        resolve(null);
-      }
-    });
-  });
-}
-//
-async function fetchYahooResults(query) {
-  return new Promise((resolve, reject) => {
-    search.json({
-      engine: 'yahoo',
-      p: query,
-      count: 5,
-      vm: 'r',
-      safe: 'active'
-    }, (result) => {
-      if (result?.error) {
-        return reject(new Error(result.error));
-      }
-      if (result?.organic_results) {
-        resolve(result.organic_results.slice(0, 5).map(item => ({
-          title: item.title,
-          link: item.link,
-          snippet: item.snippet
-        })));
-      } else {
-        resolve(null);
-      }
-    });
-  });
-}
-//
-async function fetchYandexResults(query) {
-  return new Promise((resolve, reject) => {
-    search.json({
-      engine: 'yandex',
-      text: query,
-      num: 5,
-      safe: 'active'
-    }, (result) => {
-      if (result?.error) {
-        return reject(new Error(result.error));
-      }
-      if (result?.organic_results) {
-        resolve(result.organic_results.slice(0, 5).map(item => ({
-          title: item.title,
-          link: item.link,
-          snippet: item.snippet
-        })));
-      } else {
-        resolve(null);
-      }
-    });
-  });
+
+async function handlePagination(interaction) {
+  const id = interaction.customId;
+  const ddgMatch = id.match(/^search_ddg_(prev|next)_(.+)_(\d+)_(.+)$/);
+  const serpMatch = id.match(/^search_(google|bing|yahoo|yandex)_(prev|next)_(.+)_(\d+)_(.+)$/);
+  let sessionId, page;
+  if (ddgMatch) {
+    const [, , query, pageStr, sessionIdRaw] = ddgMatch;
+    sessionId = sessionIdRaw;
+    page = Math.max(1, parseInt(pageStr, 10));
+    if (isPaginationExpired(sessionId)) {
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      return;
+    }
+    const cache = getPaginationCache(sessionId);
+    if (!cache) {
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      return;
+    }
+    const safeQuery = cache.meta.query;
+    const profanityDetected = false; //ALREADY FILTERED !!
+    await handleDuckDuckGo(interaction, safeQuery, page, profanityDetected, true);
+    return;
+  } else if (serpMatch) {
+    const [ , engine, , query, pageStr, sessionIdRaw ] = serpMatch;
+    sessionId = sessionIdRaw;
+    page = Math.max(1, parseInt(pageStr, 10));
+    if (isPaginationExpired(sessionId)) {
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      return;
+    }
+    const cache = getPaginationCache(sessionId);
+    if (!cache) {
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      return;
+    }
+    const safeQuery = cache.meta.query;
+    const profanityDetected = false;
+    await handleSerpApiEngine(interaction, safeQuery, engine, 
+      engine === 'google' ? 0x4285F4 : engine === 'bing' ? 0x00809D : engine === 'yahoo' ? 0x720E9E : 0xFF0000,
+      engine === 'google' ? '<:google:1266016555662184606>' : engine === 'bing' ? '<:bing:1266020917314850907>' : engine === 'yahoo' ? '<:yahoo:1266019185100718155>' : '<:yandex:1266020634484539515>',
+      page, safeQuery, profanityDetected, true
+    );
+    return;
+  }
 }
 //
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('search').setDescription('Search the web')
-    .addStringOption(option => option.setName('query').setDescription('What to search for').setRequired(true).setMaxLength(100))
-    .addStringOption(option => option.setName('deepsearch').setDescription('Search the web deeply').setRequired(false).addChoices(
-      { name: 'Google', value: 'google' },
-      { name: 'DuckDuckGo', value: 'duckduckgo' },
-      { name: 'Bing', value: 'bing' },
-      { name: 'Yandex', value: 'yandex' },
-      { name: 'Yahoo', value: 'yahoo' }
-    ))
-    .setDMPermission(false),
+    .setName('search')
+    .setDescription('Search the web')
+    .addSubcommand(sub => sub.setName('duckduckgo').setDescription('Search DuckDuckGo').addStringOption(opt => opt.setName('query').setDescription('Query').setRequired(true)))
+    .addSubcommand(sub => sub.setName('google').setDescription('Search Google').addStringOption(opt => opt.setName('query').setDescription('Query').setRequired(true)))
+    .addSubcommand(sub => sub.setName('bing').setDescription('Search Bing').addStringOption(opt => opt.setName('query').setDescription('Query').setRequired(true)))
+    .addSubcommand(sub => sub.setName('yahoo').setDescription('Search Yahoo').addStringOption(opt => opt.setName('query').setDescription('Query').setRequired(true)))
+    //.addSubcommand(sub => sub.setName('yandex').setDescription('Search Yandex').addStringOption(opt => opt.setName('query').setDescription('Query').setRequired(true)))
+    .addSubcommand(sub => sub.setName('queries').setDescription('Get links to all search engines').addStringOption(opt => opt.setName('query').setDescription('Query').setRequired(true))),
   async execute(interaction) {
-    await interaction.deferReply();
+    const sub = interaction.options.getSubcommand();
     const query = interaction.options.getString('query');
-
-    /* if (badWords.some(word => query.toLowerCase().includes(word))) {
-      return interaction.editReply("Unable to search for your requested query.\n-# Requested query contains prohibited words.");
-    } */
-
     const safeQuery = await filterQuery(query);
-    const deepsearch = interaction.options.getString('deepsearch');
-    const encodedQuery = encodeURIComponent(query);
     const profanityDetected = safeQuery !== query;
-
-    if (deepsearch) {
-      const engine = [
-        {
-          name: 'Google',
-          url: `https://google.com/search?q=${encodedQuery}`,
-          api: fetchGoogleResults,
-          color: 0x4285F4,
-          emoji: '<:google:1266016555662184606>',
-          enabled: !!GOOGLE_API_KEY && !!GOOGLE_CSE_ID,
-          preloaded: true
-        },
-        {
-          name: 'DuckDuckGo',
-          url: `https://duckduckgo.com/?q=${encodedQuery}`,
-          api: fetchDuckDuckGoResults,
-          color: 0xDE5833,
-          emoji: '<:duckduckgo:1266021571508572261>',
-          enabled: true,
-          preloaded: true
-        },
-        {
-          name: 'Bing',
-          url: `https://bing.com/search?q=${encodedQuery}`,
-          api: fetchBingResults,
-          color: 0x00809D,
-          emoji: '<:bing:1266020917314850907>',
-          enabled: !!SERPAPI_KEY,
-          preloaded: false
-        },
-        {
-          name: 'Yandex',
-          url: `https://yandex.com/search/?text=${encodedQuery}`,
-          api: fetchYandexResults,
-          color: 0xFF0000,
-          emoji: '<:yandex:1266020634484539515>',
-          enabled: !!SERPAPI_KEY,
-          preloaded: false
-        },
-        {
-          name: 'Yahoo',
-          url: `https://search.yahoo.com/search?p=${encodedQuery}`,
-          api: fetchYahooResults,
-          color: 0x720E9E,
-          emoji: '<:yahoo:1266019185100718155>',
-          enabled: !!SERPAPI_KEY,
-          preloaded: false
-        },
-      ];
-      //
-      if (deepsearch == 'google') {
-        const googleEngine = engine.find(engine => engine.name === 'Google');
-        let googleResults = null;
-        if (googleEngine && googleEngine.enabled && googleEngine.api) {
-          try {
-            googleResults = await googleEngine.api(query);
-          } catch (error) {
-            console.error(`Google API Error: ${error.message}`);
-          }
-        }
-        const googleEmbed = new EmbedBuilder()
-          .setColor(googleEngine.color || 0x4285F4)
-          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
-          .setTimestamp()
-          .setTitle(`${googleEngine.emoji} ${safeQuery}`);
-        if (googleResults && googleResults.length > 0) {
-          googleEmbed.setURL(engine[0].url);
-          googleEmbed.setDescription(
-            googleResults.map((r, i) =>
-              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-            ).join('\n\n')
-          );
-        } else {
-          googleEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${googleEngine.emoji} ${googleEngine.name}](${googleEngine.url})`);
-        }
-        if (profanityDetected) googleEmbed.setFooter({ text: 'Results may be unsafe' });
-        await interaction.editReply({ embeds: [googleEmbed] });
-        return;
-      } else if (deepsearch == 'duckduckgo') {
-        const duckduckgoEngine = engine.find(engine => engine.name === 'DuckDuckGo');
-        let duckduckgoResults = null;
-        if (duckduckgoEngine && duckduckgoEngine.enabled && duckduckgoEngine.api) {
-          try {
-            duckduckgoResults = await duckduckgoEngine.api(query);
-          } catch (error) {
-            console.error(`DuckDuckGo API Error: ${error.message}`);
-          }
-        }
-        const duckduckgoEmbed = new EmbedBuilder()
-          .setColor(duckduckgoEngine.color || 0xDE5833)
-          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
-          .setTimestamp()
-          .setTitle(`${duckduckgoEngine.emoji} ${safeQuery}`);
-        if (duckduckgoResults && duckduckgoResults.length > 0) {
-          duckduckgoEmbed.setURL(engine[1].url);
-          duckduckgoEmbed.setDescription(
-            duckduckgoResults.map((r, i) =>
-              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-            ).join('\n\n')
-          );
-        } else {
-          duckduckgoEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${duckduckgoEngine.emoji} ${duckduckgoEngine.name}](${duckduckgoEngine.url})`);
-        }
-        if (profanityDetected) duckduckgoEmbed.setFooter({ text: 'Results may be unsafe' });
-        await interaction.editReply({ embeds: [duckduckgoEmbed] });
-        return;
-      } else if (deepsearch == 'bing') {
-        const bingEngine = engine.find(engine => engine.name === 'Bing');
-        let bingResults = null;
-        if (bingEngine && bingEngine.enabled && bingEngine.api) {
-          try {
-            bingResults = await bingEngine.api(query);
-          } catch (error) {
-            console.error(`Bing API Error: ${error.message}`);
-          }
-        }
-        const bingEmbed = new EmbedBuilder()
-          .setColor(bingEngine.color || 0x00809D)
-          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
-          .setTimestamp()
-          .setTitle(`${bingEngine.emoji} ${safeQuery}`);
-        if (bingResults && bingResults.length > 0) {
-          bingEmbed.setURL(engine[2].url);
-          bingEmbed.setDescription(
-            bingResults.map((r, i) =>
-              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-            ).join('\n\n')
-          );
-        } else {
-          bingEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${bingEngine.emoji} ${bingEngine.name}](${bingEngine.url})`);
-        }
-        if (profanityDetected) bingEmbed.setFooter({ text: 'Results may be unsafe' });
-        await interaction.editReply({ embeds: [bingEmbed] });
-        return;
-      } else if (deepsearch == 'yandex') {
-        const yandexEngine = engine.find(engine => engine.name === 'Yandex');
-        let yandexResults = null;
-        if (yandexEngine && yandexEngine.enabled && yandexEngine.api) {
-          try {
-            yandexResults = await yandexEngine.api(query);
-          } catch (error) {
-            console.error(`Yandex API Error: ${error.message}`);
-          }
-        }
-        const yandexEmbed = new EmbedBuilder()
-          .setColor(yandexEngine.color || 0xFF0000)
-          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
-          .setTimestamp()
-          .setTitle(`${yandexEngine.emoji} ${safeQuery}`);
-        if (yandexResults && yandexResults.length > 0) {
-          yandexEmbed.setURL(engine[3].url);
-          yandexEmbed.setDescription(
-            yandexResults.map((r, i) =>
-              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-            ).join('\n\n')
-          );
-        } else {
-          yandexEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${yandexEngine.emoji} ${yandexEngine.name}](${yandexEngine.url})`);
-        }
-        if (profanityDetected) yandexEmbed.setFooter({ text: 'Results may be unsafe' });
-        await interaction.editReply({ embeds: [yandexEmbed] });
-        return;
-      } else if (deepsearch == 'yahoo') {
-        const yahooEngine = engine.find(engine => engine.name === 'Yahoo');
-        let yahooResults = null;
-        if (yahooEngine && yahooEngine.enabled && yahooEngine.api) {
-          try {
-            yahooResults = await yahooEngine.api(query);
-          } catch (error) {
-            console.error(`Yahoo API Error: ${error.message}`);
-          }
-        }
-        const yahooEmbed = new EmbedBuilder()
-          .setColor(yahooEngine.color || 0x720E9E)
-          .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
-          .setTimestamp()
-          .setTitle(`${yahooEngine.emoji} ${safeQuery}`);
-        if (yahooResults && yahooResults.length > 0) {
-          yahooEmbed.setURL(engine[4].url);
-          yahooEmbed.setDescription(
-            yahooResults.map((r, i) =>
-              `${i + 1}. [${r.title}](${r.link})\n${r.snippet ? `> ${r.snippet.slice(0, 150)}...` : ''}`
-            ).join('\n\n')
-          );
-        } else {
-          yahooEmbed.setDescription(`No results found\n[Search for ${safeQuery} on ${yahooEngine.emoji} ${yahooEngine.name}](${yahooEngine.url})`);
-        }
-        if (profanityDetected) yahooEmbed.setFooter({ text: 'Results may be unsafe' });
-        await interaction.editReply({ embeds: [yahooEmbed] });
-        return;
-      }
+    if (sub === 'duckduckgo') {
+      await handleDuckDuckGo(interaction, safeQuery, 1, profanityDetected);
+    } else if (sub === 'google') {
+      await handleSerpApiEngine(interaction, safeQuery, 'google', 0x4285F4, '<:google:1266016555662184606>', 1, safeQuery, profanityDetected);
+    } else if (sub === 'bing') {
+      await handleSerpApiEngine(interaction, safeQuery, 'bing', 0x00809D, '<:bing:1266020917314850907>', 1, safeQuery, profanityDetected);
+    } else if (sub === 'yahoo') {
+      await handleSerpApiEngine(interaction, safeQuery, 'yahoo', 0x720E9E, '<:yahoo:1266019185100718155>', 1, safeQuery, profanityDetected);
+    } else if (sub === 'yandex') {
+      await handleSerpApiEngine(interaction, safeQuery, 'yandex', 0xFF0000, '<:yandex:1266020634484539515>', 1, safeQuery, profanityDetected);
+    } else if (sub === 'queries') {
+      await handleAllLinks(interaction, safeQuery, query);
     } else {
-      const google = `https://google.com/search?q=${encodedQuery}`;
-      const duckduckgo = `https://duckduckgo.com/?q=${encodedQuery}`;
-      const bing = `https://bing.com/search?q=${encodedQuery}`;
-      const yandex = `https://yandex.com/search/?text=${encodedQuery}`;
-      const yahoo = `https://search.yahoo.com/search?p=${encodedQuery}`;
-      const brave = `https://search.brave.com/search?q=${encodedQuery}`;
-      const ecosia = `https://www.ecosia.org/search?q=${encodedQuery}`;
-      const qwant = `https://www.qwant.com/?q=${encodedQuery}`;
-      const swisscows = `https://swisscows.com/it/web?query=${encodedQuery}`;
-      const gibiru = `https://gibiru.com/results.html?q=${encodedQuery}`;
-      const lilo = `https://search.lilo.org/?q=${encodedQuery}`;
-      //
-      const regularSearchEmbed = new EmbedBuilder()
-        .setColor(0x00FFFF)
-        .setAuthor({ name: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL() })
-        .setTimestamp()
-        .setDescription(`<:google:1266016555662184606> [${safeQuery}](https://google.com/search?q=${encodedQuery})\n<:duckduckgo:1266021571508572261> [${safeQuery}](https://duckduckgo.com/?q=${encodedQuery})\n<:bing:1266020917314850907> [${safeQuery}](https://bing.com/search?q=${encodedQuery})\n<:yandex:1266020634484539515> [${safeQuery}](https://yandex.com/search/?text=${encodedQuery})\n<:yahoo:1266019185100718155> [${safeQuery}](https://search.yahoo.com/search?p=${encodedQuery})\n<:brave:1266017410109149287> [${safeQuery}](https://search.brave.com/search?q=${encodedQuery})\n<:ecosia:1266017707766055045> [${safeQuery}](https://www.ecosia.org/search?q=${encodedQuery})\n<:qwant:1266021495981998172> [${safeQuery}](https://www.qwant.com/?q=${encodedQuery})\n<:swisscows:1266020983651958785> [${safeQuery}](https://swisscows.com/it/web?query=${encodedQuery})\n<:gibiru:1266020402749247581> [${safeQuery}](https://gibiru.com/results.html?q=${encodedQuery})\n<:lilo:1266019331301576754> [${safeQuery}](https://search.lilo.org/?q=${encodedQuery})`);
-        if (profanityDetected) regularSearchEmbed.setFooter({ text: 'Results may be unsafe' });
-        await interaction.editReply({ embeds: [regularSearchEmbed] });
-      return;
+      await interaction.reply('<:search:1371166233788940460> Engine not implemented yet.');
     }
-  }
-}
+  },
+  handlePagination,
+  filterQuery
+};
