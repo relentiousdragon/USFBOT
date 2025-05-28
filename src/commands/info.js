@@ -16,7 +16,7 @@ module.exports = {
             { name: '\u200B', value: '\u200B' },
             { name: 'Total Members', value: `${interaction.client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)}`, inline: true },
             { name: 'Client Uptime', value: `${uptime}`, inline: true }
-        ).setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({size:32})}`}).setTimestamp();
+        ).setFooter({ text: `USF Bot`, iconURL: `${interaction.client.user.displayAvatarURL({size:32})}`}).setTimestamp();
         interaction.editReply({ components: [infoRow], embeds: [infoEmbed] });
     }
 }

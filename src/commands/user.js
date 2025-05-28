@@ -119,7 +119,7 @@ module.exports = {
 
     embed.addFields(fields)
          .setTimestamp()
-         .setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ size: 2048 }) });
+         .setFooter({ text: `USF Bot`, iconURL: interaction.client.user.displayAvatarURL({ size: 2048 }) });
 
     const row = new ActionRowBuilder()
       .addComponents(
