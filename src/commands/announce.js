@@ -22,13 +22,13 @@ module.exports = {
             const TextTitle = interaction.fields.getTextInputValue('title')
             const TextDescription = interaction.fields.getTextInputValue('description')
             if (mention && TextTitle) {
-                channel.send(`${mention}\n# ${TextTitle}\n${TextDescription}`);
+                channel.send(`${mention}\n# ${TextTitle}\n${TextDescription}\n-# USFBot Announcement Feature`);
             } else if (mention && !TextTitle) {
-                channel.send(`${mention}\n${TextDescription}`)
+                channel.send(`${mention}\n${TextDescription}\n-# USFBot Announcement Feature`)
             } else if (!mention && TextTitle) {
-                channel.send(`# ${TextTitle}\n${TextDescription}`)
+                channel.send(`# ${TextTitle}\n${TextDescription}\n-# USFBot Announcement Feature`)
             } else {
-                channel.send(`${TextDescription}`)
+                channel.send(`${TextDescription}\n-# USFBot Announcement Feature`)
             }
             return;
         }).catch(error => {

@@ -1,7 +1,5 @@
-const { SlashCommandBuilder } = require('discord.js')
-const { version } = require('../../config.json')
-const { infoEmbed } = require('../embeds/index-embeds.js')
-const { infoRow } = require('../rows/infoRows.js')
+const { SlashCommandBuilder, ContainerBuilder, MessageFlags, ButtonBuilder, ButtonStyle } = require('discord.js')
+const { discord, terms, github, website, privacy, status, botinvite, image, version } = require('../../config.json')
 var ms = require('ms')
 //
 module.exports = {
@@ -10,13 +8,55 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply()
         let uptime = ms(interaction.client.uptime)
-        infoEmbed.setFields(
-            { name: 'Version', value: `${version}`, inline: true },
-            { name: 'Guilds', value: `${interaction.client.guilds.cache.size}`, inline: true },
-            { name: '\u200B', value: '\u200B' },
-            { name: 'Total Members', value: `${interaction.client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)}`, inline: true },
-            { name: 'Client Uptime', value: `${uptime}`, inline: true }
-        ).setFooter({ text: `Requested by ${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({size:32})}`}).setTimestamp();
-        interaction.editReply({ components: [infoRow], embeds: [infoEmbed] });
+
+        const info = new ContainerBuilder()
+            .setAccentColor(0x0000ff)
+            .addSectionComponents(component => component.addTextDisplayComponents(components => components.setId(10).setContent('# USF Bot by DXS International \n\n– Your All-in-One Discord Multipurpose Bot! 🚀  \n\nDesigned to supercharge servers with **next-level moderation tools**, **time-saving utilities**, and **hilarious entertainment features**, USF Bot is here to transform your community experience. Whether you’re managing roles, hosting events, or just vibe-checking with memes, this bot’s got your back.  \n\n✨ **Why USF Bot?**  \n✅ **Powerful Moderation**: Streamline server management with automated warnings, role assignments, and more.  \n✅ **Smart Utilities**: Quick polls, custom commands, and server analytics – done faster.  \n✅ **Fun & Games**: Mini-games, randomizers, and meme magic to keep the chat lit.  \n✅ **100% Free**: No hidden costs, no premium walls. Built by our team, with the help of the community.  \n\nEvery feature is shaped by **user feedback** from servers like yours. Ready to level up?  \n\n*Crafted with 💻 by DXS International*')).setThumbnailAccessory(components => components.setId(11).setURL(image)))
+            .addSeparatorComponents(component => component.setId(2).setDivider(true))
+            .addTextDisplayComponents(component => component.setId(3).setContent(`- **Version:** \`${version}\`\n- **Uptime:** \`${uptime}\`\n\n## Useful Links`))
+            .addActionRowComponents(
+                component => component.setId(4).addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Discord Server')
+                        .setURL(discord)
+                        .setEmoji('<:discord:1367852983232106677>')
+                        .setStyle(ButtonStyle.Link),
+                    new ButtonBuilder()
+                        .setLabel('Invite')
+                        .setURL(`${botinvite}`)
+                        .setStyle(ButtonStyle.Link)
+                        .setEmoji('🔗'),
+                    new ButtonBuilder()
+                        .setEmoji('<:github:1389001205245542420>')
+                        .setLabel('GitHub Repository')
+                        .setURL(github)
+                        .setStyle(ButtonStyle.Link),
+                    new ButtonBuilder()
+                        .setEmoji('🌐')
+                        .setLabel('Website')
+                        .setURL(website)
+                        .setStyle(ButtonStyle.Link),
+                    new ButtonBuilder()
+                        .setEmoji('💔')
+                        .setLabel('Status Page')
+                        .setURL(status)
+                        .setStyle(ButtonStyle.Link)
+                )
+            )
+            .addSeparatorComponents(component => component.setId(5).setDivider(true))
+            .addTextDisplayComponents(component => component.setId(6).setContent('## Legal Section'))
+            .addActionRowComponents(component => component.setId(7).setComponents(
+                new ButtonBuilder()
+                    .setLabel('Terms of Service')
+                    .setURL(`${terms}`)
+                    .setStyle(ButtonStyle.Link)
+                    .setEmoji('🛡'),
+                new ButtonBuilder()
+                    .setLabel('Privacy Policy')
+                    .setURL(`${privacy}`)
+                    .setStyle(ButtonStyle.Link)
+                    .setEmoji('🔒')
+            ))
+        interaction.editReply({ components: [info], flags: MessageFlags.IsComponentsV2 });
     }
 }

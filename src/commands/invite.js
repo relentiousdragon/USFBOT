@@ -1,21 +1,20 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } = require('discord.js')
+const { ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags, SlashCommandBuilder } = require('discord.js')
+const { botinvite } = require('../../config.json')
 //
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('invite').setDescription('Invite the Bot to your servers!').setDMPermission(true),
     async execute(interaction) {
         await interaction.deferReply()
-        const embed = new EmbedBuilder()
-            .setColor(0x0000ff)
-            .setTitle('Invite the USF Bot')
-            .setDescription('Invite the USF Bot to your servers or use it as user-instaled app!\n\nClick the link button below to proceed!')
-            .setTimestamp();
-        const invite = new ButtonBuilder()
+        const invitebutton = new ButtonBuilder()
             .setLabel('Invite')
             .setStyle(ButtonStyle.Link)
-            .setURL('https://discord.com/oauth2/authorize?client_id=1090240246005907466')
+            .setURL(`${botinvite}`)
             .setEmoji('🔗');
-        const row = new ActionRowBuilder().addComponents(invite);
-        return interaction.editReply({ embeds: [embed], components: [row] })
+            const invite = new ContainerBuilder()
+                .setAccentColor(0x0000ff)
+                .addTextDisplayComponents(component => component.setContent('## Invite the USF Bot!\nInvite the USF Bot to your servers or use it as user-installed app!\nClick the link button below to proceed!'))
+                .addActionRowComponents(component => component.setComponents(invitebutton))
+        return interaction.editReply({ components: [invite], flags: MessageFlags.IsComponentsV2 })
     }
 }
