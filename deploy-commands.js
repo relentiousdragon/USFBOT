@@ -206,6 +206,22 @@ const commands = [
         contexts: [0, 1, 2]
     },
     {
+        name: "gemini",
+        description: "Ask Google Gemini (AI) a question",
+        dm_permission: true,
+        integration_types: [0, 1],
+        contexts: [0, 1, 2],
+        options: [
+            {
+                name: "prompt",
+                description: "Your question or prompt for Gemini AI",
+                type: 3,
+                required: true,
+                max_length: 500
+            }
+        ]
+    },
+    {
         name: "help",
         description: "Get commands and info about the bot",
         dm_permission: true,
@@ -512,35 +528,100 @@ const commands = [
         integration_types: [0, 1],
         contexts: [0, 1, 2]
     },
-    {
-        name: "search",
-        description: "Search the Web",
-        dm_permission: true,
-        integration_types: [0, 1],
-        contexts: [0, 1, 2],
+  {
+    name: "search",
+    description: "Search the Web",
+    dm_permission: true,
+    type: 1,
+    integration_types: [0,1],
+    contexts: [0,1,2],
+    options: [
+      {
+        name: "google",
+        description: "Search using Google",
+        type: 1,
         options: [
-            {
-                name: "query",
-                description: "What to Search for",
-                type: 3,
-                max_length: 100,
-                required: true
-            },
-            {
-                name: "deepsearch",
-                description: "Search the web deeply",
-                type: 3,
-                required: false,
-                choices: [
-                    { name: 'Google', type: 3, value: 'google' },
-                    { name: 'DuckDuckGo', type: 3, value: 'duckduckgo' },
-                    { name: 'Bing', type: 3, value: 'bing' },
-                    { name: 'Yahoo', type: 3, value: 'yahoo' },
-                    { name: 'Yandex', type: 3, value: 'yandex'}
-                ]
-            }
+          {
+            name: "query",
+            description: "What to search for",
+            type: 3,
+            required: true,
+            max_length: 100
+          }
         ]
-    },
+      },
+      {
+        name: "duckduckgo",
+        description: "Search using DuckDuckGo",
+        type: 1,
+        options: [
+          {
+            name: "query",
+            description: "What to search for",
+            type: 3,
+            required: true,
+            max_length: 100
+          }
+        ]
+      },
+      {
+        name: "bing",
+        description: "Search using Bing",
+        type: 1,
+        options: [
+          {
+            name: "query",
+            description: "What to search for",
+            type: 3,
+            required: true,
+            max_length: 100
+          }
+        ]
+      },
+      {
+        name: "yahoo",
+        description: "Search using Yahoo",
+        type: 1,
+        options: [
+          {
+            name: "query",
+            description: "What to search for",
+            type: 3,
+            required: true,
+            max_length: 100
+          }
+        ]
+      },
+      {
+        name: "yandex",
+        description: "Search using Yandex",
+        type: 1,
+        options: [
+          {
+            name: "query",
+            description: "What to search for",
+            type: 3,
+            required: true,
+            max_length: 100
+          }
+        ]
+      },
+      {
+        name: "queries",
+        description: "Search across multiple search engines",
+        type: 1,
+        options: [
+          {
+            name: "query",
+            description: "What to search for",
+            type: 3,
+            required: true,
+            max_length: 100
+          }
+        ]
+      }
+    ]
+  },
 	{
 		name: "server",
 		description: "Display info about this server",
@@ -838,6 +919,22 @@ const commands = [
                 type: 3,
                 max_length: 200,
                 required: false
+            }
+        ]
+    },
+    {
+        name: "dictionary",
+        description: "Look up the definition of a word",
+        dm_permission: true,
+        integration_types: [0, 1],
+        contexts: [0, 1, 2],
+        options: [
+            {
+                name: "word",
+                description: "The word to define",
+                type: 3,
+                required: true,
+                max_length: 100
             }
         ]
     }

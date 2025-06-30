@@ -10,6 +10,7 @@ const client = new Client({
 
     ]} 
 });
+const { handlePagination } = require('./src/commands/search.js');
 client.cooldowns = new Collection();
 client.commands = new Collection();
 //
@@ -38,6 +39,16 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.guild) {
         if (bannedGuilds.includes(interaction.guild.id)) {
             return;
+        }
+    }
+        if (interaction.isButton()) {
+        if (interaction.customId.startsWith('search_')) {
+          await handlePagination(interaction);
+        }
+        if (interaction.customId.startsWith('dictionary_pronounce_')) {
+          const dictionary = require('./src/commands/dictionary.js');
+          await dictionary.handlePronunciationButton(interaction);
+          return;
         }
     }
     if (!interaction.isChatInputCommand()) return;
@@ -73,7 +84,7 @@ client.on(Events.InteractionCreate, async interaction => {
     } catch (error) {
         console.error(error);
         const { erbed } = require('./src/embeds/index-embeds.js')
-        erbed.setFooter(`${error}`)
+        erbed.setFooter({text: `${error}`})
         if (interaction.replied) {
             interaction.editReply({ embeds: [erbed], flags: MessageFlags.Ephemeral })
         } else {
@@ -118,6 +129,7 @@ client.on(Events.GuildDelete, async guild => {
         leavech.send({ embeds: [leaveEmbed] })
     }
 });
+
 process.on('unhandledRejection', console.error)
 process.on('uncaughtException', console.error)
 client.login(token)
