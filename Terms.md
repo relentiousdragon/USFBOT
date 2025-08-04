@@ -1,5 +1,6 @@
 # Terms of Service
 > Last Updated: 04-08-2025 (DD-MM-YYYY)
+
 By inviting USFBot to your Discord server or using any of its features, you agree to be bound by these Terms of Service. If you do not agree, you may not use the bot.
 
 ## 1. Description and Definitions
