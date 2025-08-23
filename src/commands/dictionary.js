@@ -1,5 +1,10 @@
 const { SlashCommandBuilder, MessageFlags, ContainerBuilder, SectionBuilder, TextDisplayBuilder, ThumbnailBuilder, SeparatorBuilder, SeparatorSpacingSize, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const axios = require('axios');
+try {
+  const ffmpegStatic = require('ffmpeg-static');
+  if (ffmpegStatic) process.env.FFMPEG_PATH = ffmpegStatic;
+} catch (e) {
+}
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, entersState, VoiceConnectionStatus, AudioPlayerStatus, getVoiceConnection } = require('@discordjs/voice');
 const googleTTS = require('google-tts-api');
 
@@ -59,7 +64,7 @@ module.exports = {
           .setStyle(ButtonStyle.Primary)
           .setLabel('🔊 Pronunciation')
           .setCustomId(`dictionary_pronounce_${encodeURIComponent(word)}_${interaction.user.id}`)
-          .setDisabled(profanityDetected);
+          .setDisabled(profanityDetected || !interaction.guild);
         section = new SectionBuilder()
           .setButtonAccessory(pronounceBtn)
           .addTextDisplayComponents(
@@ -148,7 +153,13 @@ async function handlePronunciationButton(interaction) {
     return;
   }
   cooldowns.set(userId, now);
-  const member = await interaction.guild.members.fetch(userId);
+  let member;
+  try {
+    member = await interaction.guild.members.fetch(userId);
+  } catch {
+    await interaction.reply({ content: '❌ Could not fetch your member info.', ephemeral: true });
+    return;
+  }
   const vc = member.voice.channel;
   if (!vc) {
     await interaction.reply({ content: '❌ You must be in a voice channel to hear the pronunciation.', ephemeral: true });
@@ -161,22 +172,49 @@ async function handlePronunciationButton(interaction) {
     await interaction.reply({ content: '❌ Could not generate pronunciation.', ephemeral: true });
     return;
   }
-  const connection = joinVoiceChannel({
-    channelId: vc.id,
-    guildId: vc.guild.id,
-    adapterCreator: vc.guild.voiceAdapterCreator
-  });
-  const player = createAudioPlayer();
-  const resource = createAudioResource(url);
-  connection.subscribe(player);
-  await interaction.reply({ content: `🔊 Pronunciation for **${word}** played in <#${vc.id}>.`, ephemeral: true });
-  player.play(resource);
+  let connection;
+  let player;
+  let createdConnection = false;
   try {
-    await entersState(player, AudioPlayerStatus.Playing, 5000);
-    await entersState(player, AudioPlayerStatus.Idle, 15000);
-  } catch {}
-  player.stop();
-  connection.destroy();
+    const existing = getVoiceConnection(vc.guild.id);
+    if (existing) {
+      const existingChannelId = existing.joinConfig && existing.joinConfig.channelId;
+      if (existingChannelId && existingChannelId !== vc.id) {
+        await interaction.reply({ content: '❌ Bot is already in another voice channel in this server.', ephemeral: true });
+        return;
+      }
+      connection = existing;
+    } else {
+      connection = joinVoiceChannel({
+        channelId: vc.id,
+        guildId: vc.guild.id,
+        adapterCreator: vc.guild.voiceAdapterCreator
+      });
+      createdConnection = true;
+    }
+    player = createAudioPlayer();
+    const resource = createAudioResource(url);
+    connection.subscribe(player);
+    await interaction.reply({ content: `🔊 Pronunciation for **${word}** played in <#${vc.id}>.`, ephemeral: true });
+    player.play(resource);
+    try {
+      await entersState(player, AudioPlayerStatus.Playing, 5000);
+      await entersState(player, AudioPlayerStatus.Idle, 15000);
+    } catch (err) {
+      if (err.name === 'AbortError' || err.code === 'ABORT_ERR') {
+        await interaction.followUp({ content: '❌ Audio playback was aborted or interrupted.', ephemeral: true });
+      } else {
+        await interaction.followUp({ content: '❌ An error occurred during audio playback.', ephemeral: true });
+      }
+    }
+  } catch (err) {
+    await interaction.reply({ content: '❌ Could not join voice channel or play audio.', ephemeral: true });
+  } finally {
+    try { if (player) player.stop(); } catch {}
+    try {
+      if (connection && createdConnection) connection.destroy();
+    } catch {}
+  }
 }
 
 module.exports.handlePronunciationButton = handlePronunciationButton;
