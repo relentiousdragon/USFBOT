@@ -33,6 +33,15 @@ client.once(Events.ClientReady, () => {
 })
 //
 client.on(Events.InteractionCreate, async interaction => {
+    // DEBUG STUFF //
+    /* console.log(`[DEBUG] Interaction received:`, {
+        commandName: interaction.commandName,
+        options: interaction.options?._hoistedOptions,
+        isChatInputCommand: interaction.isChatInputCommand(),
+        isButton: interaction.isButton(),
+        isAutocomplete: interaction.isAutocomplete(),
+        isModalSubmit: interaction.isModalSubmit()
+    });  */
     if (bannedUsers.includes(interaction.user.id)) {
         return;
     }
@@ -52,37 +61,45 @@ client.on(Events.InteractionCreate, async interaction => {
         }
     }
     if (!interaction.isChatInputCommand()) return;
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
-
-    //
+    let command = client.commands.get(interaction.commandName);
+    if (command && interaction.options.getSubcommand(false)) {
+        const sub = interaction.options.getSubcommand(false);
+        if (command[sub] && typeof command[sub].execute === 'function') {
+            command = command[sub];
+        } else if (command[sub] && typeof command[sub] === 'object') {
+            const subsub = interaction.options.getSubcommandGroup(false);
+            if (subsub && command[sub][subsub] && typeof command[sub][subsub].execute === 'function') {
+                command = command[sub][subsub];
+            }
+        }
+    }
+    if (!command || typeof command.execute !== 'function') {
+        console.log(`No valid command handler found for:`, interaction.commandName);
+        return;
+    }
 
     const { cooldowns } = client;
     if (!cooldowns.has(command.name)) {
-		cooldowns.set(command.name, new Collection());
+        cooldowns.set(command.name, new Collection());
     }
     const now = Date.now();
-	const timestamps = cooldowns.get(command.name);
-	const defaultCooldownDuration = 3;
-	const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1000;
-    //
+    const timestamps = cooldowns.get(command.name);
+    const defaultCooldownDuration = 3;
+    const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1000;
     if (timestamps.has(interaction.user.id)) {
         const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
-        if (now<expirationTime) {
+        if (now < expirationTime) {
             const expiredTimestamp = Math.round(expirationTime / 1000);
             interaction.reply({ content: `Please wait <t:${expiredTimestamp}:R> more second(s)`, flags: MessageFlags.Ephemeral });
             return;
         }
     }
-
-    //
-
     timestamps.set(interaction.user.id, now);
-	setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+    setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
     try {
         await command.execute(interaction);
     } catch (error) {
-        console.error(error);
+        console.error(`[ERROR] Command execution failed:`, error);
         const { erbed } = require('./src/embeds/index-embeds.js')
         erbed.setFooter({text: `${error}`})
         if (interaction.replied) {

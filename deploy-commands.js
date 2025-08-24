@@ -4,6 +4,36 @@ const fs = require('node:fs')
 const path = require('node:path');
 //
 const commands = [
+{
+    name: "generate",
+    description: "Generate things using USF Bot",
+    dm_permission: true,
+    integration_types: [0, 1],
+    contexts: [0, 1, 2],
+    options: [
+        {
+            name: "emoji",
+            description: "Combine two emojis using Emoji Kitchen",
+            type: 1,
+            options: [
+                {
+                    name: "emoji1",
+                    description: "First emoji",
+                    type: 3,
+                    required: true,
+                    max_length: 10
+                },
+                {
+                    name: "emoji2",
+                    description: "Second emoji",
+                    type: 3,
+                    required: true,
+                    max_length: 10
+                }
+            ]
+        }
+    ]
+},
 	{
 		name: "announce",
 		description: "Send an announcement using the bot",

@@ -1,5 +1,6 @@
 const { MessageFlags, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events, ContainerBuilder, SectionBuilder, TextDisplayBuilder, ThumbnailBuilder, SeparatorBuilder, SeparatorSpacingSize, MediaGalleryBuilder, MediaGalleryItemBuilder, ConnectionService } = require('discord.js');
 const axios = require('axios');
+const crypto = require('crypto');
 const { GOOGLE_API_KEY, GOOGLE_CSE_ID, SERPAPI_KEY } = require('../../config.json');
 const { getJson } = require('serpapi');
 
@@ -31,7 +32,8 @@ const PAGINATION_CACHE = new Map();
 const PAGINATION_TTL = 10 * 60 * 1000;
 
 function makeSessionId(engine, query, userId) {
-  return `${engine}_${Buffer.from(query).toString('base64')}_${userId}`;
+  const short = crypto.randomBytes(6).toString('hex');
+  return `${engine}_${short}_${userId}`;
 }
 
 function setPaginationCache(sessionId, results, meta) {
@@ -188,8 +190,8 @@ async function buildDuckDuckGoComponent(result, page, totalPages, bot, query, se
   }
 
   if (result.isRelated && !result.isAbstract) {
-    const ddgPrevId = `search_ddg_prev_${query}_${page - 1}_${sessionId}`;
-    const ddgNextId = `search_ddg_next_${query}_${page + 1}_${sessionId}`;
+  const ddgPrevId = `search_ddg_prev_${page - 1}_${sessionId}`;
+  const ddgNextId = `search_ddg_next_${page + 1}_${sessionId}`;
     const expired = isPaginationExpired(sessionId);
 
     const textDisplays = [
@@ -229,8 +231,8 @@ async function buildDuckDuckGoComponent(result, page, totalPages, bot, query, se
   }
 
   if (result.isAbstract && page === 1) {
-    const ddgPrevId = `search_ddg_prev_${query}_${page - 1}_${sessionId}`;
-    const ddgNextId = `search_ddg_next_${query}_${page + 1}_${sessionId}`;
+  const ddgPrevId = `search_ddg_prev_${page - 1}_${sessionId}`;
+  const ddgNextId = `search_ddg_next_${page + 1}_${sessionId}`;
     const expired = isPaginationExpired(sessionId);
 
     let width = result.ImageWidth, height = result.ImageHeight;
@@ -396,8 +398,8 @@ async function buildDuckDuckGoComponent(result, page, totalPages, bot, query, se
   }
 
   if (!result.isAbstract && !result.infobox) {
-    const ddgPrevId = `search_ddg_prev_${query}_${page - 1}_${sessionId}`;
-    const ddgNextId = `search_ddg_next_${query}_${page + 1}_${sessionId}`;
+  const ddgPrevId = `search_ddg_prev_${page - 1}_${sessionId}`;
+  const ddgNextId = `search_ddg_next_${page + 1}_${sessionId}`;
     const expired = isPaginationExpired(sessionId);
 
     let shortTitle = getShortTitle(result.title);
@@ -444,8 +446,8 @@ async function buildDuckDuckGoComponent(result, page, totalPages, bot, query, se
 }
 
 async function buildSerpApiComponent(res, page, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sessionId) {
-  const serpPrevId = `search_${engineName}_prev_${query}_${page - 1}_${sessionId}`;
-  const serpNextId = `search_${engineName}_next_${query}_${page + 1}_${sessionId}`;
+  const serpPrevId = `search_${engineName}_prev_${page - 1}_${sessionId}`;
+  const serpNextId = `search_${engineName}_next_${page + 1}_${sessionId}`;
   const expired = isPaginationExpired(sessionId);
 
   let thumbnailUrl = logoUrl;
@@ -554,12 +556,12 @@ async function filterQuery(query) {
   }
 }
 
-async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected = false, isPagination = false) {
+async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected = false, isPagination = false, sessionId = null) {
   const userId = interaction.user.id;
-  const sessionId = makeSessionId('ddg', query, userId);
+  const sid = sessionId || makeSessionId('ddg', query, userId);
   let results, totalPages;
   if (!isPagination) {
-    await interaction.deferReply();
+    if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
     const apiUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&no_redirect=1&kp=1&safe=active`;
     const response = await axios.get(apiUrl);
     const data = response.data;
@@ -570,10 +572,10 @@ async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected 
     if (!results.length) {
       return interaction.editReply({ content: '<:search:1371166233788940460> No results found.' });
     }
-    totalPages = results.length;
-    setPaginationCache(sessionId, results, { query, totalPages });
+  totalPages = results.length;
+  setPaginationCache(sid, results, { query, totalPages });
   } else {
-    const cache = getPaginationCache(sessionId);
+  const cache = getPaginationCache(sid);
     if (!cache) {
       await interaction.reply({ content: '❌ This search session has expired. Please run the command again.', ephemeral: true });
       return;
@@ -583,7 +585,7 @@ async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected 
     await interaction.deferUpdate();
   }
   const currentPage = Math.max(1, Math.min(page, totalPages));
-  const component = await buildDuckDuckGoComponent(results[currentPage - 1], currentPage, totalPages, interaction.client, query, sessionId);
+  const component = await buildDuckDuckGoComponent(results[currentPage - 1], currentPage, totalPages, interaction.client, query, sid);
   await interaction.editReply({ components: [component], flags: MessageFlags.IsComponentsV2 });
 }
 
@@ -625,13 +627,13 @@ async function handleAllLinks(interaction, query, realQuery) {
   await interaction.reply({ components: [embed], flags: MessageFlags.IsComponentsV2 });
 }
 
-async function handleSerpApiEngine(interaction, query, engineName, color, emoji, page = 1, safeQuery = null, profanityDetected = false, isPagination = false) {
+async function handleSerpApiEngine(interaction, query, engineName, color, emoji, page = 1, safeQuery = null, profanityDetected = false, isPagination = false, sessionId = null) {
   const userId = interaction.user.id;
-  const sessionId = makeSessionId(engineName, query, userId);
+  const sid = sessionId || makeSessionId(engineName, query, userId);
   let items, totalPages;
   if (!safeQuery) safeQuery = query;
   if (!isPagination) {
-    await interaction.deferReply({ ephemeral: false });
+    if (!interaction.deferred && !interaction.replied) await interaction.deferReply({ ephemeral: false });
     if (engineName === 'google') {
       try {
         const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&safe=active&num=10`;
@@ -641,8 +643,8 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
           await interaction.editReply({ content: `<:search:1371166233788940460> No results found.` });
           return;
         }
-        totalPages = items.length;
-        setPaginationCache(sessionId, items, { query, totalPages });
+  totalPages = items.length;
+  setPaginationCache(sid, items, { query, totalPages });
       } catch (error) {
         let errMsg = error?.response?.data?.error?.message || error?.message || String(error);
         if (errMsg.includes('API key') || errMsg.includes('invalid') || errMsg.includes('quota')) {
@@ -683,7 +685,7 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
               return resolve();
             }
             totalPages = items.length;
-            setPaginationCache(sessionId, items, { query, totalPages });
+            setPaginationCache(sid, items, { query, totalPages });
             resolve();
           });
         });
@@ -697,7 +699,7 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
       }
     }
   } else {
-    const cache = getPaginationCache(sessionId);
+  const cache = getPaginationCache(sid);
     if (!cache) {
       await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
       return;
@@ -717,7 +719,7 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
       domain = 'google.com';
       logoUrl = '';
     }
-    const component = await buildSerpApiComponent(res, currentPage, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sessionId);
+  const component = await buildSerpApiComponent(res, currentPage, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sid);
     await interaction.editReply({ components: [component], flags: MessageFlags.IsComponentsV2 });
     return;
   } else {
@@ -730,7 +732,7 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
       logoUrl = null;
     }
     if (!logoUrl) logoUrl = '';
-    const component = await buildSerpApiComponent(res, currentPage, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sessionId);
+  const component = await buildSerpApiComponent(res, currentPage, totalPages, engineName, color, emoji, query, logoUrl, domain, profanityDetected, sid);
     await interaction.editReply({ components: [component], flags: MessageFlags.IsComponentsV2 });
     return;
   }
@@ -738,11 +740,11 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
 
 async function handlePagination(interaction) {
   const id = interaction.customId;
-  const ddgMatch = id.match(/^search_ddg_(prev|next)_(.+)_(\d+)_(.+)$/);
-  const serpMatch = id.match(/^search_(google|bing|yahoo|yandex)_(prev|next)_(.+)_(\d+)_(.+)$/);
+  const ddgMatch = id.match(/^search_ddg_(prev|next)_(\d+)_(.+)$/);
+  const serpMatch = id.match(/^search_(google|bing|yahoo|yandex)_(prev|next)_(\d+)_(.+)$/);
   let sessionId, page;
   if (ddgMatch) {
-    const [, , query, pageStr, sessionIdRaw] = ddgMatch;
+    const [, , pageStr, sessionIdRaw] = ddgMatch;
     sessionId = sessionIdRaw;
     page = Math.max(1, parseInt(pageStr, 10));
     if (isPaginationExpired(sessionId)) {
@@ -756,10 +758,10 @@ async function handlePagination(interaction) {
     }
     const safeQuery = cache.meta.query;
     const profanityDetected = false; //ALREADY FILTERED !!
-    await handleDuckDuckGo(interaction, safeQuery, page, profanityDetected, true);
+  await handleDuckDuckGo(interaction, safeQuery, page, profanityDetected, true, sessionId);
     return;
   } else if (serpMatch) {
-    const [ , engine, , query, pageStr, sessionIdRaw ] = serpMatch;
+    const [ , engine, , pageStr, sessionIdRaw ] = serpMatch;
     sessionId = sessionIdRaw;
     page = Math.max(1, parseInt(pageStr, 10));
     if (isPaginationExpired(sessionId)) {
@@ -776,7 +778,7 @@ async function handlePagination(interaction) {
     await handleSerpApiEngine(interaction, safeQuery, engine, 
       engine === 'google' ? 0x4285F4 : engine === 'bing' ? 0x00809D : engine === 'yahoo' ? 0x720E9E : 0xFF0000,
       engine === 'google' ? '<:google:1266016555662184606>' : engine === 'bing' ? '<:bing:1266020917314850907>' : engine === 'yahoo' ? '<:yahoo:1266019185100718155>' : '<:yandex:1266020634484539515>',
-      page, safeQuery, profanityDetected, true
+      page, safeQuery, profanityDetected, true, sessionId
     );
     return;
   }
@@ -795,6 +797,12 @@ module.exports = {
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
     const query = interaction.options.getString('query');
+    if (sub === 'queries') {
+      const safeQueryImmediate = await filterQuery(query);
+      await handleAllLinks(interaction, safeQueryImmediate, query);
+      return;
+    }
+    if (!interaction.deferred && !interaction.replied) await interaction.deferReply({ ephemeral: false });
     const safeQuery = await filterQuery(query);
     const profanityDetected = safeQuery !== query;
     if (sub === 'duckduckgo') {
@@ -807,10 +815,12 @@ module.exports = {
       await handleSerpApiEngine(interaction, safeQuery, 'yahoo', 0x720E9E, '<:yahoo:1266019185100718155>', 1, safeQuery, profanityDetected);
     } else if (sub === 'yandex') {
       await handleSerpApiEngine(interaction, safeQuery, 'yandex', 0xFF0000, '<:yandex:1266020634484539515>', 1, safeQuery, profanityDetected);
-    } else if (sub === 'queries') {
-      await handleAllLinks(interaction, safeQuery, query);
     } else {
-      await interaction.reply('<:search:1371166233788940460> Engine not implemented yet.');
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply('<:search:1371166233788940460> Engine not implemented yet.');
+      } else {
+        await interaction.reply('<:search:1371166233788940460> Engine not implemented yet.');
+      }
     }
   },
   handlePagination,
