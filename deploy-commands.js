@@ -13,7 +13,7 @@ const commands = [
     options: [
         {
             name: "emoji",
-            description: "Combine two emojis using Emoji Kitchen",
+            description: "Combine two emojis to create a new one!",
             type: 1,
             options: [
                 {

@@ -56,14 +56,14 @@ async function getEmojiUrl(primary1, primary2, emoji1, emoji2) {
   }
   return emojiUrl;
 }
-
+//
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('generate')
     .setDescription('Generate things using USF Bot')
     .addSubcommand(sub =>
       sub.setName('emoji')
-        .setDescription('Combine two emojis using Emoji Kitchen')
+        .setDescription('Combine two emojis to create a new one!')
         .addStringOption(opt =>
           opt.setName('emoji1')
             .setDescription('First emoji')
