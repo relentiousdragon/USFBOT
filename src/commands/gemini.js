@@ -3,7 +3,7 @@ const axios = require('axios');
 const { gemini_key } = require('../../config.json');
 const { filterQuery } = require('./search.js');
 const fs = require('fs');
-const path = /require('path');
+const path = require('path');
 const USAGE_FILE = path.join(__dirname, '../../gemini_image_usage.json');
 //
 function loadImageUsage() {
