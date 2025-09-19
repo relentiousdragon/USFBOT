@@ -183,42 +183,35 @@ if (!response) {
 }
 
 function parseGeminiResponse(response, model) {
-  let text = 'No response.';
+  if (!response || !response.candidates || response.candidates.length === 0) {
+    console.log("DEBUG: No candidates found in response");
+    return { text: "No response.", imageData: null };
+  }
+
+  let textParts = [];
   let imageData = null;
 
-  if (!response || !response.candidates || response.candidates.length === 0) {
-    return { text, imageData };
-  }
+  for (const candidate of response.candidates) {
+    if (!candidate.content || !candidate.content.parts) continue;
 
-  const parts = response.candidates[0].content?.parts;
-  if (!parts || parts.length === 0) {
-    return { text, imageData };
-  }
-
-  if (model.includes('2.0-flash-preview-image-generation')) {
-    for (const part of parts) {
-      if (part.inlineData && part.inlineData.mimeType?.startsWith('image/') && part.inlineData.data) {
-        imageData = part.inlineData.data;
-        break;
+    for (const part of candidate.content.parts) {
+      if (part.text && typeof part.text === "string" && part.text.trim() !== "") {
+        textParts.push(part.text.trim());
       }
-    }
-    return { text, imageData };
-  }
 
-  for (const part of parts) {
-    if (part.text && typeof part.text === 'string' && part.text.trim() !== '') {
-      text = part.text;
-    }
-    if (part.inlineData && part.inlineData.mimeType?.startsWith('image/') && part.inlineData.data) {
-      if (model.includes('image-preview') || model.includes('flash-image')) {
+      if (!imageData && part.inlineData &&
+          part.inlineData.mimeType?.startsWith("image/") &&
+          part.inlineData.data) {
         imageData = part.inlineData.data;
       }
     }
-    if (text !== 'No response.' && imageData) break;
   }
+
+  const text = textParts.length ? textParts.join("\n\n") : "No response.";
 
   return { text, imageData };
 }
+
 
 let { text, imageData } = parseGeminiResponse(response, usedModel);
 /*
