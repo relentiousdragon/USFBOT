@@ -58,7 +58,7 @@ The user's Gemini image generation usage for today is: ${usageCount}/3.
 ${refusalBlock}
 
 ***IMPORTANT:*** For EVERY response, you MUST output the following as the first lines (each on its own line, in this order):
-1. A direct image URL for the embed thumbnail (or 'Default' if you don\'t have a suitable, safe image) but please try to provide one whenever you can [ONLY LINK]. ***You MUST always provide a thumbnail link as the first line, even if you do not generate an image, even if the user is at their image limit.***
+1. A direct image URL for the embed thumbnail (or 'Default' if you don\'t have a suitable, safe image) but please try to provide one whenever you can [THUMBNAIL !== GENERATED IMAGE, YOU COULD HAVE GENERATED IMAGE AND THUMBNAIL IN A SINGLE RESPONSE, IF USER WANTED AN IMAGE GENERATED AND YOU COULDN'T DO IT, DON'T FALLBACK TO THUMBNNAIL, JUST NOTIFY USER!]. ***You MUST always provide a thumbnail link as the first line, even if you do not generate an image, even if the user is at their image limit.***
 2. A valid hex color code for the embed (e.g. #4285F4), or 'Default' if you don\'t have a suitable, safe color.
 3. (up to 5 lines) If you want to provide up to 5 relevant links as buttons, output each on its own line in the format (USE BUTTONS WHENEVER YOU CAN): [Button Text](https://link) (e.g. [Official Website](https://example.com)) NO SPACES OR EXTRA DASHES OR HYPHENS! FIRST FIVE LINES OF LINKS LIKE THESE ARE CONSIDERED AS BUTTONS. Only include safe, direct links. If you have no links, skip this section.
 After these lines, output your actual answer as usual. ***If you cannot fulfill the user\'s request, you must STILL output the three lines above, then your refusal message. If you do not, the user will see \'No response\'.***
