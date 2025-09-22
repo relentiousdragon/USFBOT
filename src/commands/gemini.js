@@ -58,16 +58,16 @@ The user's Gemini image generation usage for today is: ${usageCount}/3.
 ${refusalBlock}
 
 ***IMPORTANT:*** For EVERY response, you MUST output the following as the first lines (each on its own line, in this order):
-1. A direct image URL for the embed thumbnail (or 'Default' if you don\'t have a suitable, safe image). ***You MUST always provide a thumbnail link as the first line, even if you do not generate an image, even if the user is at their image limit.***
+1. A direct image URL for the embed thumbnail (or 'Default' if you don\'t have a suitable, safe image) but please try to provide one whenever you can [THUMBNAIL !== GENERATED IMAGE, YOU COULD HAVE GENERATED IMAGE AND THUMBNAIL IN A SINGLE RESPONSE, IF USER WANTED AN IMAGE GENERATED AND YOU COULDN'T DO IT, DON'T FALLBACK TO THUMBNNAIL, JUST NOTIFY USER!]. ***You MUST always provide a thumbnail link as the first line, even if you do not generate an image, even if the user is at their image limit.***
 2. A valid hex color code for the embed (e.g. #4285F4), or 'Default' if you don\'t have a suitable, safe color.
-3. (up to 5 lines) If you want to provide up to 5 relevant links as buttons, output each on its own line in the format: [Button Text](https://link) (e.g. [Official Website](https://example.com)) NO SPACES OR EXTRA DASHES OR HYPHENS! FIRST FIVE LIINES OF LIINKS LIKE THESE ARE CONSIDERED AS BUTTONS. Only include safe, direct links. If you have no links, skip this section.
+3. (up to 5 lines) If you want to provide up to 5 relevant links as buttons, output each on its own line in the format (USE BUTTONS WHENEVER YOU CAN): [Button Text](https://link) (e.g. [Official Website](https://example.com)) NO SPACES OR EXTRA DASHES OR HYPHENS! FIRST FIVE LINES OF LINKS LIKE THESE ARE CONSIDERED AS BUTTONS. Only include safe, direct links. If you have no links, skip this section.
 After these lines, output your actual answer as usual. ***If you cannot fulfill the user\'s request, you must STILL output the three lines above, then your refusal message. If you do not, the user will see \'No response\'.***
 
 If the user prompt requests, describes, or implies an image, you MUST generate and return an actual image (as base64 or inlineData, not just a link or description) in your response, using Gemini's image generation capabilities, UNLESS the user's image generation usage for today is 3/3 or higher. If the user is at their image generation limit, DO NOT generate or return any inline/base64 image, or any external image pretending to be a generated image, and only use the thumbnail image link system for the embed. You MUST reply with: "I cannot generate any more images for you today, is there anything else you would like me to do?" if user reached limit
 
 Note that the user cannot reply to you again after this, so let them know all they need to know in one response. PLEASE USE PROPER DISCORD TEXT FORMATTING, no stray dashes or out of place spaces like before a first letter in a line.).
 ALWAYS INCLUDE AN IMAGE LINK RELATED TO YOUR RESPONSE IN THE FIRST LINE IF YOU HAVE ANY APPROPRIATE ONES WHETHER THE USER ASKED FOR IT OR NOT.
-***You do NOT have to generate an image every time unless specifically asked for, use the thumbnail image link system!***`;
+***You do NOT have to generate an image every time unless specifically asked for, use the thumbnail image link system!*** RESPECT DISCORD EMBED DESCRIPTION LIMIT`;
     const fullPrompt = `${systemPrompt}\nUser: ${prompt}`;
     const safetySettings = [
       { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -82,7 +82,7 @@ ALWAYS INCLUDE AN IMAGE LINK RELATED TO YOUR RESPONSE IN THE FIRST LINE IF YOU H
         new SectionBuilder()
           .setThumbnailAccessory(new ThumbnailBuilder().setURL('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Google_Bard_logo.svg/2048px-Google_Bard_logo.svg.png'))
           .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`# <:i_gemini:1371166211030650881> Gemini is thinking...\n-# Gemini 2.0 FLASH`)
+            new TextDisplayBuilder().setContent(`# <:i_gemini:1371166211030650881> Gemini is thinking...\n-# Please wait,\nit make take a few moments depending on the model being used for your prompt.`)
           )
       );
     await interaction.reply({ components: [loadingContainer], flags: MessageFlags.IsComponentsV2 });
@@ -102,31 +102,129 @@ ALWAYS INCLUDE AN IMAGE LINK RELATED TO YOUR RESPONSE IN THE FIRST LINE IF YOU H
       }
     }
 
+const lowerPrompt = prompt.toLowerCase();
+const wantsImage =
+  lowerPrompt.startsWith("generate an image") ||
+  lowerPrompt.startsWith("create an image") ||
+  lowerPrompt.startsWith("make an image") ||
+  lowerPrompt.startsWith("draw an image");
+
+let model = "";
+if (wantsImage) {
+  model = "gemini-2.5-flash-image-preview";
+} else {
+  model = "gemini-2.5-pro";
+}
+
+async function generateUsingGemini(model, fullPrompt, safetySettings) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini_key}`;
+  try {
+    const response = await axios.post(url, {
+      contents: [{ parts: [{ text: fullPrompt }] }],
+      generationConfig: {
+        responseModalities: wantsImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+      },
+      safetySettings
+    }, { headers: { "Content-Type": "application/json" } });
+
+    return response.data;
+  } catch (err) {
+    if (err.response) {
+      const status = err.response.status;
+      const msg = JSON.stringify(err.response.data || {});
+      if (
+        status === 429 ||
+        msg.includes("quota") ||
+        msg.includes("rate limit") ||
+        msg.includes("RESOURCE_EXHAUSTED")
+      ) {
+        throw { type: "RATE_LIMIT", error: err };
+      }
+    }
+    throw { type: "FATAL", error: err };
+  }
+}
+
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${gemini_key}`;
-      const response = await axios.post(url, {
-        contents: [
-          {
-            parts: [
-              { text: fullPrompt }
-            ]
-          }
-        ],
-        generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-        safetySettings
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+let modelsPriority = [];
+if (wantsImage) {
+  modelsPriority = [
+    "gemini-2.5-flash-image-preview",
+    "gemini-2.0-flash-preview-image-generation"
+  ];
+} else {
+  modelsPriority = [
+    "gemini-2.5-pro",   
+    "gemini-2.5-flash", 
+    "gemini-2.0-flash-preview-image-generation"  
+  ];
+}
+
+let response = null;
+let usedModel = null;
+for (const model of modelsPriority) {
+  try {
+    response = await generateUsingGemini(model, fullPrompt, safetySettings);
+    usedModel = model;
+    break;
+  } catch (err) {
+    if (err.type === "RATE_LIMIT") {
+      console.warn(`Quota hit for ${model}, falling back...`);
+      continue;
+    } else {
+      throw err.error;
+    }
+  }
+}
+
+console.log(response);
+if (!response) {
+  throw new Error("All Gemini models exhausted due to rate limits.");
+}
+
+function parseGeminiResponse(response, model) {
+  if (!response || !response.candidates || response.candidates.length === 0) {
+    console.log("DEBUG: No candidates found in response");
+    return { text: "No response.", imageData: null };
+  }
+
+  let textParts = [];
+  let imageData = null;
+
+  for (const candidate of response.candidates) {
+    if (!candidate.content || !candidate.content.parts) continue;
+
+    for (const part of candidate.content.parts) {
+      if (part.text && typeof part.text === "string" && part.text.trim() !== "") {
+        textParts.push(part.text.trim());
+      }
+
+      if (!imageData && part.inlineData &&
+          part.inlineData.mimeType?.startsWith("image/") &&
+          part.inlineData.data) {
+        imageData = part.inlineData.data;
+      }
+    }
+  }
+
+  const text = textParts.length ? textParts.join("\n\n") : "No response.";
+
+  return { text, imageData };
+}
+
+
+let { text, imageData } = parseGeminiResponse(response, usedModel);
+/*
       let text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
       let imageData = null;
-      if (response.data?.candidates?.[0]?.content?.parts) {
+     if (response.data?.candidates?.[0]?.content?.parts) {
         for (const part of response.data.candidates[0].content.parts) {
           if (part.inlineData && part.inlineData.mimeType?.startsWith('image/') && part.inlineData.data) {
             imageData = part.inlineData.data;
             break;
           }
         }
-      }
+      } */
       function cleanGeminiOutput(raw, defaultThumb, defaultColor) {
         if (!raw || typeof raw !== 'string') return `${defaultThumb}\n${defaultColor}\nNo response.`;
         raw = raw.replace(/\\`\\`\\`/g, '```');
@@ -237,7 +335,7 @@ ALWAYS INCLUDE AN IMAGE LINK RELATED TO YOUR RESPONSE IN THE FIRST LINE IF YOU H
       } else if (!answer) {
         answer = 'No response.';
       }
-      if (answer.length > 2000) answer = answer.slice(0, 1997) + '...';
+      if (answer.length > 4000) answer = answer.slice(0, 3997) + '...';
       let filteredPrompt = await filterQuery(prompt);
       if (filteredPrompt.length > 80) filteredPrompt = filteredPrompt.slice(0, 77) + '...';
       const resultContainer = new ContainerBuilder()
