@@ -417,7 +417,7 @@ async function buildDuckDuckGoComponent(result, page, totalPages, bot, query, se
       .addTextDisplayComponents(...textDisplays);
     const actionRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setStyle(ButtonStyle.Secondary) 
+        .setStyle(ButtonStyle.Secondary)
         .setLabel('Prev')
         .setCustomId(ddgPrevId)
         .setDisabled(page === 1 || expired),
