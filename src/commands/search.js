@@ -36,8 +36,8 @@ function makeSessionId(engine, query, userId) {
   return `${engine}_${short}_${userId}`;
 }
 
-function setPaginationCache(sessionId, results, meta) {
-  PAGINATION_CACHE.set(sessionId, { timestamp: Date.now(), results, meta });
+function setPaginationCache(sessionId, results, meta, userId) {
+  PAGINATION_CACHE.set(sessionId, { timestamp: Date.now(), results, meta, userId });
 }
 
 function getPaginationCache(sessionId) {
@@ -573,13 +573,16 @@ async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected 
       return interaction.editReply({ content: '<:search:1371166233788940460> No results found.' });
     }
   totalPages = results.length;
-  setPaginationCache(sid, results, { query, totalPages });
+  setPaginationCache(sid, results, { query, totalPages }, userId);
   } else {
   const cache = getPaginationCache(sid);
     if (!cache) {
       await interaction.reply({ content: '❌ This search session has expired. Please run the command again.', ephemeral: true });
       return;
     }
+     if (interaction.user.id !== cache.userId) {
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+  }
     results = cache.results;
     totalPages = cache.meta.totalPages;
     await interaction.deferUpdate();
@@ -644,7 +647,7 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
           return;
         }
   totalPages = items.length;
-  setPaginationCache(sid, items, { query, totalPages });
+  setPaginationCache(sid, items, { query, totalPages }, userId);
       } catch (error) {
         let errMsg = error?.response?.data?.error?.message || error?.message || String(error);
         if (errMsg.includes('API key') || errMsg.includes('invalid') || errMsg.includes('quota')) {
@@ -685,7 +688,7 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
               return resolve();
             }
             totalPages = items.length;
-            setPaginationCache(sid, items, { query, totalPages });
+            setPaginationCache(sid, items, { query, totalPages }, userId);
             resolve();
           });
         });
@@ -704,6 +707,9 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
       await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
       return;
     }
+     if (interaction.user.id !== cache.userId) {
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+  }
     items = cache.results;
     totalPages = cache.meta.totalPages;
     await interaction.deferUpdate();
@@ -756,6 +762,9 @@ async function handlePagination(interaction) {
       await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
       return;
     }
+     if (interaction.user.id !== cache.userId) {
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+  }
     const safeQuery = cache.meta.query;
     const profanityDetected = false; //ALREADY FILTERED !!
   await handleDuckDuckGo(interaction, safeQuery, page, profanityDetected, true, sessionId);
@@ -773,6 +782,9 @@ async function handlePagination(interaction) {
       await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
       return;
     }
+     if (interaction.user.id !== cache.userId) {
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+  }
     const safeQuery = cache.meta.query;
     const profanityDetected = false;
     await handleSerpApiEngine(interaction, safeQuery, engine, 
