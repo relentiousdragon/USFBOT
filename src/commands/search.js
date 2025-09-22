@@ -577,11 +577,11 @@ async function handleDuckDuckGo(interaction, query, page = 1, profanityDetected 
   } else {
   const cache = getPaginationCache(sid);
     if (!cache) {
-      await interaction.reply({ content: '❌ This search session has expired. Please run the command again.', ephemeral: true });
+      await interaction.reply({ content: '❌ This search session has expired. Please run the command again.', flags: MessageFlags.Ephemeral });
       return;
     }
      if (interaction.user.id !== cache.userId) {
-    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', flags: MessageFlags.Ephemeral });
   }
     results = cache.results;
     totalPages = cache.meta.totalPages;
@@ -704,11 +704,11 @@ async function handleSerpApiEngine(interaction, query, engineName, color, emoji,
   } else {
   const cache = getPaginationCache(sid);
     if (!cache) {
-      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', flags: MessageFlags.Ephemeral });
       return;
     }
      if (interaction.user.id !== cache.userId) {
-    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', flags: MessageFlags.Ephemeral });
   }
     items = cache.results;
     totalPages = cache.meta.totalPages;
@@ -754,16 +754,16 @@ async function handlePagination(interaction) {
     sessionId = sessionIdRaw;
     page = Math.max(1, parseInt(pageStr, 10));
     if (isPaginationExpired(sessionId)) {
-      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', flags: MessageFlags.Ephemeral });
       return;
     }
     const cache = getPaginationCache(sessionId);
     if (!cache) {
-      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', flags: MessageFlags.Ephemeral });
       return;
     }
      if (interaction.user.id !== cache.userId) {
-    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', flags: MessageFlags.Ephemeral });
   }
     const safeQuery = cache.meta.query;
     const profanityDetected = false; //ALREADY FILTERED !!
@@ -774,16 +774,16 @@ async function handlePagination(interaction) {
     sessionId = sessionIdRaw;
     page = Math.max(1, parseInt(pageStr, 10));
     if (isPaginationExpired(sessionId)) {
-      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', flags: MessageFlags.Ephemeral });
       return;
     }
     const cache = getPaginationCache(sessionId);
     if (!cache) {
-      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', ephemeral: true });
+      await interaction.reply({ content: '❌ This pagination session has expired. Please run the command again.', flags: MessageFlags.Ephemeral });
       return;
     }
      if (interaction.user.id !== cache.userId) {
-    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', ephemeral: true });
+    return interaction.reply({ content: '❌ Only the user who ran the command can use these buttons.', flags: MessageFlags.Ephemeral });
   }
     const safeQuery = cache.meta.query;
     const profanityDetected = false;
