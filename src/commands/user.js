@@ -71,7 +71,7 @@ module.exports = {
            newBadgeArray.push(badge);
          }
       }
-      titleSuffix = verified ? ' <:verifiedapp:1367852951250665552>' : ' <:app:1367852968090665082>';
+      titleSuffix = verified ? ' <:i:1420457712872853667><:i:1420457723514065047><:i:1420457734238634146>' : ' <:i:1420457691121188884><:i:1420457702156402899>';
       badgeArray = newBadgeArray;
     }
 
