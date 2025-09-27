@@ -2,8 +2,12 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } =
 
 const purgeQueue = [];
 let isRunning = false;
-//
+
 async function bulkDeleteMessages(channel, amount, targetUserIds = null, beforeMessageId = null) {
+    if (!channel.permissionsFor(channel.client.user)?.has(PermissionsBitField.Flags.ManageMessages)) {
+        throw new Error("Bot lacks the required ManageMessages permission in this channel.");
+    }
+
     let deletedCount = 0;
     let remaining = amount;
 
@@ -46,6 +50,13 @@ async function processQueue(client) {
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (!channel) {
         await interaction?.reply({ content: '❌ Could not fetch the channel.', flags: MessageFlags.Ephemeral }).catch(() => {});
+        isRunning = false;
+        processQueue(client);
+        return;
+    }
+
+    if (!channel.permissionsFor(client.user)?.has(PermissionsBitField.Flags.ManageMessages)) {
+        await interaction?.reply({ content: '❌ I do not have ManageMessages permission in this channel.', flags: MessageFlags.Ephemeral }).catch(() => {});
         isRunning = false;
         processQueue(client);
         return;
@@ -96,6 +107,11 @@ module.exports = {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages) &&
             !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: '❌ You do not have permission to use this command.', flags: MessageFlags.Ephemeral });
+        }
+
+        const channel = interaction.channel;
+        if (!channel.permissionsFor(interaction.client.user)?.has(PermissionsBitField.Flags.ManageMessages)) {
+            return interaction.reply({ content: '❌ I do not have ManageMessages permission in this channel.', flags: MessageFlags.Ephemeral });
         }
 
         const amount = interaction.options.getInteger('amount');
