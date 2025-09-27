@@ -319,29 +319,64 @@ const commands = [
             }
         ]
     },
+{
+  "name": "minecraft",
+  "description": "Minecraft utility commands",
+  "dm_permission": true,
+  "integration_types": [0, 1],
+  "contexts": [0, 1, 2],
+  "options": [
     {
-        name: "mcstatus",
-        description: "Get the status of a Java or Bedrock Edition Minecraft Server",
-        dm_permission: false,
-        options: [
-            {
-                name: "address",
-                description: "IP address of the Minecraft server",
-                type: 3,
-                required: true
-            },
-            {
-                name: "edition",
-                description: "Edition of the Minecraft server (default java)",
-                type: 3,
-                required: false,
-                choices: [
-                    { name: 'Java', type: 3, value: 'java' },
-                    { name: 'Bedrock', type: 3, value: 'bedrock' },
-                ]
-            }
-        ]
+      "name": "server",
+      "description": "Get the status of a Java or Bedrock Edition Minecraft Server",
+      "type": 1,
+      "options": [
+        {
+          "name": "address",
+          "description": "IP address of the Minecraft server",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "edition",
+          "description": "Edition of the Minecraft server (default java)",
+          "type": 3,
+          "required": false,
+          "choices": [
+            { "name": "Java", "value": "java" },
+            { "name": "Bedrock", "value": "bedrock" }
+          ]
+        }
+      ]
     },
+    {
+      "name": "skin",
+      "description": "Get the skin of a Minecraft player",
+      "type": 1,
+      "options": [
+        {
+          "name": "username",
+          "description": "Minecraft username or UUID",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "type",
+          "description": "Render type",
+          "type": 3,
+          "required": true,
+          "choices": [
+            { "name": "Headshot", "value": "headshot" },
+            { "name": "Full Body", "value": "full-body" },
+            { "name": "Skin File", "value": "skin" },
+            { "name": "3D Head", "value": "head" },
+            { "name": "Cape", "value": "cape" }
+          ]
+        }
+      ]
+    }
+  ]
+},
     {
         name: "meme",
         description: "Generate a random meme",
@@ -544,20 +579,114 @@ const commands = [
             }
         ]
     },
+{
+  name: "rps",
+  description: "Play Rock Paper Scissors with the bot or another user",
+  dm_permission: false,
+  integration_types: [0, 1],
+  contexts: [0, 1, 2],
+  options: [
     {
-        name: "rps",
-        description: "Play Rock Paper Scissors with the bot",
-        dm_permission: false,
-        integration_types: [0, 1],
-        contexts: [0, 1, 2]
+      "name": "opponent",
+      "description": "User to challenge (optional)",
+      "type": 6,
+      "required": false
+    }
+  ]
+},
+{
+  name: "remind",
+  description: "Set and manage reminders",
+  integration_types: [0, 1],
+  dm_permission: true,
+  contexts: [0, 1, 2],
+  options: [
+    {
+      type: 1,
+      name: "add",
+      description: "Add a new reminder",
+      options: [
+        {
+          type: 3,
+          name: "time",
+          description: "When to remind you (e.g. 10m, 2h, 3d)",
+          required: true
+        },
+        {
+          type: 3,
+          name: "message",
+          description: "What you want to be reminded about",
+          required: true,
+          max_length: 500
+        },
+        {
+          type: 3,
+          name: "repeat",
+          description: "Repeat interval (e.g. 1h, 1d) — leave empty for one-time",
+          required: false
+        },
+        {
+          type: 4,
+          name: "times",
+          description: "How many times to repeat (0 = forever, default = until stopped)",
+          required: false
+        },
+        {
+          type: 5,
+          name: "dm",
+          description: "Send reminder in DM instead of the channel",
+          required: false
+        }
+      ]
     },
     {
+      type: 1,
+      name: "list",
+      description: "List all your active reminders"
+    },
+    {
+      type: 1,
+      name: "delete",
+      description: "Delete a reminder by ID",
+      options: [
+        {
+          type: 3,
+          name: "id",
+          description: "The ID of the reminder to delete",
+          required: true,
+          autocomplete: true
+        }
+      ]
+    }
+  ]
+},
+    /*{
         name: "say",
         description: "Say something in chat through the bot",
         dm_permission: false,
         integration_types: [0, 1],
         contexts: [0, 1, 2]
-    },
+    },*/
+    {
+    name: "purge",
+    description: "Delete messages in bulk",
+    default_member_permissions: 0x2000 | 0x8, // ManageMessages | Administrator
+    dm_permission: false,
+    options: [
+      {
+        name: "amount",
+        description: "Number of messages to delete",
+        type: 4,
+        required: true
+      },
+      {
+        name: "user",
+        description: "Delete messages from a specific user (optional)",
+        type: 6,
+        required: false
+      }
+    ]
+  },
   {
     name: "search",
     description: "Search the Web",
