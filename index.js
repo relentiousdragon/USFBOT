@@ -10,6 +10,7 @@ const client = new Client({
 
     ]} 
 });
+const { start: startReminders, listReminders, deleteReminder } = require('./src/utils/reminderManager.js');
 const { handlePagination } = require('./src/commands/search.js');
 client.cooldowns = new Collection();
 client.commands = new Collection();
@@ -30,6 +31,7 @@ for (const folder of commandFolders) {
 //
 client.once(Events.ClientReady, () => {
     console.log(`Client Logged in as ${client.user.tag}!\nServices working as expected\n\n`);
+    startReminders(client);
 })
 //
 client.on(Events.InteractionCreate, async interaction => {
@@ -50,14 +52,49 @@ client.on(Events.InteractionCreate, async interaction => {
             return;
         }
     }
+    if (interaction.isAutocomplete()) {
+  const focusedOption = interaction.options.getFocused(true);
+
+  if (focusedOption.name === 'id') {
+    const reminders = await listReminders(interaction.user.id);
+    const choices = reminders.map(r => ({
+      name: r.message.length > 30 ? r.message.slice(0, 30) + '...' : r.message,
+      value: r.id
+    }));
+
+    await interaction.respond(choices.slice(0, 25));
+  }
+  return;
+}
         if (interaction.isButton()) {
         if (interaction.customId.startsWith('search_')) {
           await handlePagination(interaction);
         }
+        if (interaction.customId.startsWith('deleteReminder_')) {
+            const reminders = await listReminders(interaction.user.id);
+      const reminderId = interaction.customId.split('_')[1];
+      const reminder = reminders.find(r => r.id === reminderId);
+
+      if (!reminder) {
+        return interaction.reply({ content: 'This reminder no longer exists.', ephemeral: true });
+      }
+
+      if (interaction.user.id !== reminder.userId) {
+        return interaction.reply({ content: 'Only the reminder owner can delete this.', ephemeral: true });
+      }
+
+      await deleteReminder(reminder.userId, reminder.id);
+      await interaction.update({ content: 'Reminder deleted ✅', embeds: [], components: [] });
+    }
         if (interaction.customId.startsWith('dictionary_pronounce_')) {
           const dictionary = require('./src/commands/dictionary.js');
           await dictionary.handlePronunciationButton(interaction);
           return;
+        }
+        if (interaction.customId.startsWith('meme_refresh_')) {
+            const meme = require('./src/commands/meme.js');
+            await meme.handleButton(interaction);
+            return;
         }
     }
     if (!interaction.isChatInputCommand()) return;
