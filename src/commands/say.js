@@ -1,4 +1,6 @@
-const { ActionRowBuilder, ModalBuilder, PermissionsBitField, SlashCommandBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+// DISABLED!!
+
+/* const { ActionRowBuilder, ModalBuilder, PermissionsBitField, SlashCommandBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 //
 module.exports = {
     data: new SlashCommandBuilder()
@@ -53,4 +55,4 @@ module.exports = {
             }
         }
     }
-}
+} */
