@@ -70,7 +70,7 @@ module.exports = {
     }
 }
 
-// NOT BEING USED, POPULATE WITH MORE FACTS AND ENABLE IF YOU WANT BYY UNNCOMMENTING LINE 66 AND MOVING THE ;
+// NOT BEING USED, POPULATE WITH MORE FACTS AND ENABLE BY UNNCOMMENTING LINE 66 AND REMOVING THE ; from line 65
 const funFacts = [
     "💡 Fun Fact: The bot was written entirely in Node.js!",
     "💡 Fun Fact: This command has 82 lines of code!",
